@@ -233,26 +233,66 @@ class Player {
         if (this.hasLaser) this.laserCooldown--;
         if (this.hasMissile) this.missileCooldown--;
         
-        // Robot arms auto-attack
-        if (this.equipped && this.equipped.arms && mouse.down) {
-            if (!this.armsCooldown) this.armsCooldown = 0;
-            if (this.armsCooldown <= 0) {
-                // Find nearest enemy to shoot/punch
+        // Robot arms auto-attack & manual attack
+        if (this.equipped) {
+            const hasM1 = this.equipped.arms_m1;
+            const hasM2 = this.equipped.arms_m2;
+            const hasM3 = this.equipped.arms_m3;
+            
+            if (hasM1 || hasM2 || hasM3) {
+                if (!this.armsCooldown) this.armsCooldown = 0;
+                
+                let targetEnemy = null;
                 if (typeof enemies !== 'undefined' && enemies.length > 0) {
-                    let nearest = null;
-                    let minDist = 300; // Attack range
+                    let minDist = hasM1 ? 120 : 350; // M1 has short punch range, others have shoot range
                     for (const e of enemies) {
                         if (e.dead) continue;
                         const dist = Math.hypot(e.x - this.x, e.y - this.y);
-                        if (dist < minDist) { minDist = dist; nearest = e; }
+                        if (dist < minDist) { minDist = dist; targetEnemy = e; }
                     }
-                    if (nearest) {
-                        const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
-                        this.bullets.push(new Bullet(this.x, this.y, Math.cos(angle)*8, Math.sin(angle)*8, '#39ff14', 15, 6));
-                        if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
-                        this.armsCooldown = 30; // fire rate
+                }
+                
+                // Fire logic
+                if (this.armsCooldown <= 0) {
+                    const aimAngle = targetEnemy ? Math.atan2(targetEnemy.y - this.y, targetEnemy.x - this.x) : Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                    
+                    if (hasM1 && targetEnemy) {
+                        // M1: Auto punch close enemies
+                        if (typeof audio !== 'undefined' && audio) audio.playSound('shoot'); 
+                        targetEnemy.hp -= 25; // instant punch damage
+                        this.armsCooldown = 40;
                         this.armsPunchAnim = 10;
-                        this.armsAngle = angle;
+                        this.armsAngle = aimAngle;
+                    } 
+                    else if (hasM2 || hasM3) {
+                        // M2 & M3: Ranged
+                        const isAuto = typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true;
+                        const wantsManualFire = !isAuto && typeof keys !== 'undefined' && keys['Shift'];
+                        
+                        // Dagger stab for M2 if close
+                        if (hasM2 && targetEnemy && Math.hypot(targetEnemy.x - this.x, targetEnemy.y - this.y) < 90) {
+                            targetEnemy.hp -= 30; // Dagger damage
+                            this.armsPunchAnim = 10;
+                            this.armsAngle = aimAngle;
+                        }
+
+                        // Shooting
+                        if ((isAuto && targetEnemy) || wantsManualFire) {
+                            const fireAngle = isAuto && targetEnemy ? aimAngle : Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                            
+                            // M2 shoots 1 bullet, M3 shoots 3 spread bullets
+                            const bulletColor = hasM3 ? '#ff003c' : '#39ff14';
+                            this.bullets.push(new Bullet(this.x, this.y, Math.cos(fireAngle)*10, Math.sin(fireAngle)*10, bulletColor, hasM3 ? 12 : 15, 6));
+                            if (hasM3) {
+                                this.bullets.push(new Bullet(this.x, this.y, Math.cos(fireAngle+0.2)*10, Math.sin(fireAngle+0.2)*10, bulletColor, 12, 6));
+                                this.bullets.push(new Bullet(this.x, this.y, Math.cos(fireAngle-0.2)*10, Math.sin(fireAngle-0.2)*10, bulletColor, 12, 6));
+                            }
+                            
+                            if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
+                            this.armsCooldown = hasM3 ? 20 : 25;
+                            this.armsPunchAnim = 10;
+                            this.armsAngle = fireAngle;
+                        }
                     }
                 }
             }
@@ -441,7 +481,7 @@ class Player {
         if (this.hasMissile) this._drawMissilePod(ctx, alpha);
         
         // Draw Robot Arms
-        if (this.equipped && this.equipped.arms && this.stealthLevel < 0.8) {
+        if (this.equipped && (this.equipped.arms_m1 || this.equipped.arms_m2 || this.equipped.arms_m3) && this.stealthLevel < 0.8) {
             this._drawRobotArms(ctx, alpha, col);
         }
     }
@@ -498,39 +538,131 @@ class Player {
         ctx.globalAlpha = alpha;
         const time = Date.now() * 0.003;
         
-        // Left arm
-        let lx = this.x + Math.cos(this.angle - Math.PI/2) * (this.radius + 15) + Math.cos(time) * 5;
-        let ly = this.y + Math.sin(this.angle - Math.PI/2) * (this.radius + 15) + Math.sin(time) * 5;
+        const hasM1 = this.equipped.arms_m1;
+        const hasM2 = this.equipped.arms_m2;
+        const hasM3 = this.equipped.arms_m3;
         
-        // Right arm
-        let rx = this.x + Math.cos(this.angle + Math.PI/2) * (this.radius + 15) + Math.cos(time + Math.PI) * 5;
-        let ry = this.y + Math.sin(this.angle + Math.PI/2) * (this.radius + 15) + Math.sin(time + Math.PI) * 5;
+        let themeColor = hasM3 ? '#ff003c' : '#39ff14';
+        
+        // Base Shoulder positions
+        let slx = this.x + Math.cos(this.angle - Math.PI/1.5) * (this.radius + 5);
+        let sly = this.y + Math.sin(this.angle - Math.PI/1.5) * (this.radius + 5);
+        let srx = this.x + Math.cos(this.angle + Math.PI/1.5) * (this.radius + 5);
+        let sry = this.y + Math.sin(this.angle + Math.PI/1.5) * (this.radius + 5);
+
+        // Hand positions (default floating)
+        let lx = slx + Math.cos(this.angle - Math.PI/2) * 18 + Math.cos(time) * 4;
+        let ly = sly + Math.sin(this.angle - Math.PI/2) * 18 + Math.sin(time) * 4;
+        
+        let rx = srx + Math.cos(this.angle + Math.PI/2) * 18 + Math.cos(time + Math.PI) * 4;
+        let ry = sry + Math.sin(this.angle + Math.PI/2) * 18 + Math.sin(time + Math.PI) * 4;
+
+        let leftArmAngle = Math.atan2(ly - sly, lx - slx);
+        let rightArmAngle = Math.atan2(ry - sry, rx - srx);
 
         // Punch animation overrides position if active
         if (this.armsPunchAnim > 0) {
-            const ext = (10 - this.armsPunchAnim) * 2;
+            const ext = (10 - this.armsPunchAnim) * 2.5;
             const a = this.armsAngle || this.angle;
-            lx = this.x + Math.cos(a - 0.5) * (this.radius + 15 + ext);
-            ly = this.y + Math.sin(a - 0.5) * (this.radius + 15 + ext);
-            rx = this.x + Math.cos(a + 0.5) * (this.radius + 15 + ext);
-            ry = this.y + Math.sin(a + 0.5) * (this.radius + 15 + ext);
+            lx = slx + Math.cos(a - 0.2) * (15 + ext);
+            ly = sly + Math.sin(a - 0.2) * (15 + ext);
+            rx = srx + Math.cos(a + 0.2) * (15 + ext);
+            ry = sry + Math.sin(a + 0.2) * (15 + ext);
+            leftArmAngle = Math.atan2(ly - sly, lx - slx);
+            rightArmAngle = Math.atan2(ry - sry, rx - srx);
         }
 
-        // Draw connections
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y); ctx.lineTo(lx, ly);
-        ctx.moveTo(this.x, this.y); ctx.lineTo(rx, ry);
-        ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.stroke();
+        // Draw articulated arms (2 segments)
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 3.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        
+        // Left arm joints
+        let elx = slx + Math.cos(leftArmAngle + 0.5) * 10;
+        let ely = sly + Math.sin(leftArmAngle + 0.5) * 10;
+        ctx.beginPath(); ctx.moveTo(slx, sly); ctx.lineTo(elx, ely); ctx.lineTo(lx, ly); ctx.stroke();
+        
+        // Right arm joints
+        let erx = srx + Math.cos(rightArmAngle - 0.5) * 10;
+        let ery = sry + Math.sin(rightArmAngle - 0.5) * 10;
+        ctx.beginPath(); ctx.moveTo(srx, sry); ctx.lineTo(erx, ery); ctx.lineTo(rx, ry); ctx.stroke();
 
-        // Draw hands
+        // Shoulders (sockets)
         ctx.fillStyle = '#222';
-        ctx.strokeStyle = '#39ff14';
+        ctx.beginPath(); ctx.arc(slx, sly, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(srx, sry, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        // Draw hands and weapons
+        ctx.fillStyle = '#222';
+        ctx.strokeStyle = themeColor;
         ctx.lineWidth = 2;
-        ctx.shadowBlur = 10; ctx.shadowColor = '#39ff14';
+        ctx.shadowBlur = 10; ctx.shadowColor = themeColor;
         
-        ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(rx, ry, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        
+        if (hasM1) {
+            // M1: Big boxing gloves
+            ctx.beginPath(); ctx.arc(lx, ly, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(rx, ry, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        } 
+        else if (hasM2) {
+            // M2: Left hand Dagger, Right hand Gun
+            // Left (Dagger)
+            ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.save();
+            ctx.translate(lx, ly); ctx.rotate(leftArmAngle);
+            ctx.fillStyle = '#ccc'; ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(15, 0); ctx.lineTo(0, 2); ctx.fill();
+            ctx.restore();
+            
+            // Right (Gun)
+            ctx.beginPath(); ctx.arc(rx, ry, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.save();
+            ctx.translate(rx, ry); ctx.rotate(rightArmAngle);
+            ctx.fillStyle = '#555'; ctx.shadowBlur = 0;
+            ctx.fillRect(0, -3, 12, 6);
+            ctx.fillStyle = themeColor; ctx.shadowBlur = 10;
+            ctx.fillRect(12, -2, 4, 4);
+            ctx.restore();
+        }
+        else if (hasM3) {
+            // M3: 2 arm energy guns + 2 hand pistols
+            // Arm Guns (attached to forearms)
+            ctx.save();
+            ctx.translate(elx, ely); ctx.rotate(leftArmAngle);
+            ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
+            ctx.fillRect(0, -5, 14, 4);
+            ctx.fillStyle = themeColor; ctx.shadowBlur = 8;
+            ctx.fillRect(12, -4, 5, 2);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(erx, ery); ctx.rotate(rightArmAngle);
+            ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
+            ctx.fillRect(0, 1, 14, 4);
+            ctx.fillStyle = themeColor; ctx.shadowBlur = 8;
+            ctx.fillRect(12, 2, 5, 2);
+            ctx.restore();
+            
+            // Hand Pistols
+            ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.save();
+            ctx.translate(lx, ly); ctx.rotate(leftArmAngle);
+            ctx.fillStyle = '#555'; ctx.shadowBlur = 0;
+            ctx.fillRect(0, -2, 10, 4);
+            ctx.fillStyle = themeColor; ctx.shadowBlur = 10;
+            ctx.fillRect(10, -1, 3, 2);
+            ctx.restore();
+            
+            ctx.beginPath(); ctx.arc(rx, ry, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.save();
+            ctx.translate(rx, ry); ctx.rotate(rightArmAngle);
+            ctx.fillStyle = '#555'; ctx.shadowBlur = 0;
+            ctx.fillRect(0, -2, 10, 4);
+            ctx.fillStyle = themeColor; ctx.shadowBlur = 10;
+            ctx.fillRect(10, -1, 3, 2);
+            ctx.restore();
+        }
+
         ctx.restore();
     }
 }
