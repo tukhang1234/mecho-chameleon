@@ -918,3 +918,5 @@ h1, h2, h3, .label {
     color: rgba(255,255,255,0.7);
     margin-left: 5px;
 }
+
+.hidden { display: none !important; }
