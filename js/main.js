@@ -248,6 +248,16 @@ function initGame() {
         oppHPContainer.classList.add('hidden');
     }
 
+    // Chat UI integration
+    if (mpMode) {
+        if (chatToggleBtn) chatToggleBtn.classList.remove('hidden');
+        if (chatWindow) chatWindow.classList.add('hidden'); // Close by default
+        if (chatMessages) chatMessages.innerHTML = ''; // Clear chat history
+    } else {
+        if (chatToggleBtn) chatToggleBtn.classList.add('hidden');
+        if (chatWindow) chatWindow.classList.add('hidden');
+    }
+
     audio.stopMusic();
     audio.startGameMusic();
 
@@ -932,11 +942,65 @@ if (autoAimBtn) {
 // SHOP LOGIC
 // ==========================
 const mechaArmsCat = document.getElementById('mecha-arms-category');
-const mechaArmsSub = document.getElementById('mecha-arms-submenu');
-if (mechaArmsCat && mechaArmsSub) {
+const mechaArmsScreen = document.getElementById('mecha-arms-screen');
+const backFromMechaArms = document.getElementById('back-from-mecha-arms');
+
+if (mechaArmsCat && mechaArmsScreen) {
     mechaArmsCat.addEventListener('click', () => {
-        mechaArmsSub.classList.toggle('hidden');
+        shopScreen.classList.add('hidden');
+        mechaArmsScreen.classList.remove('hidden');
+        document.getElementById('mechaCoinsDisplay').innerText = coins;
     });
+}
+if (backFromMechaArms) {
+    backFromMechaArms.addEventListener('click', () => {
+        mechaArmsScreen.classList.add('hidden');
+        shopScreen.classList.remove('hidden');
+        updateShopUI();
+    });
+}
+
+// ==========================
+// CHAT UI LOGIC
+// ==========================
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+const chatWindow = document.getElementById('chat-window');
+const chatInput = document.getElementById('chat-input');
+const chatSendBtn = document.getElementById('chat-send-btn');
+const chatMessages = document.getElementById('chat-messages');
+
+if (chatToggleBtn && chatWindow) {
+    chatToggleBtn.addEventListener('click', () => {
+        chatWindow.classList.toggle('hidden');
+        if (!chatWindow.classList.contains('hidden')) {
+            chatInput.focus();
+        }
+    });
+
+    function sendChatMessage() {
+        const msg = chatInput.value.trim();
+        if (msg !== '' && socket && mpMode) {
+            socket.emit('chat_message', { msg, playerIndex });
+            appendChatMessage(playerIndex, msg);
+            chatInput.value = '';
+        }
+    }
+
+    chatSendBtn.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
+    });
+}
+
+function appendChatMessage(pIndex, text) {
+    if (!chatMessages) return;
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    const pClass = pIndex === 1 ? 'p1' : 'p2';
+    const pLabel = pIndex === 1 ? 'P1' : 'P2';
+    div.innerHTML = `<span class="${pClass}">[${pLabel}]</span>: ${text}`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 shopBtn.addEventListener('click', (e) => {
@@ -971,6 +1035,7 @@ document.addEventListener('click', (e) => {
                     equippedItems.arms_m1 = false;
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
+                    equippedItems.arms_m4 = false;
                 }
                 equippedItems[itemType] = true;
                 saveGameData();
@@ -992,6 +1057,7 @@ document.addEventListener('click', (e) => {
                     equippedItems.arms_m1 = false;
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
+                    equippedItems.arms_m4 = false;
                 }
                 equippedItems[itemType] = true;
             } else {
@@ -1167,6 +1233,18 @@ function setupSocketListeners() {
     socket.on('opponent_died', () => {
         if (mpMode === 'pvp' && gameState === 'playing') {
             showVictory();
+        }
+    });
+
+    socket.on('opponent_restart', () => {
+        if (gameState !== 'playing') initGame();
+    });
+
+    socket.on('chat_message', (data) => {
+        appendChatMessage(data.playerIndex, data.msg);
+        // Show chat button if hidden or notify
+        if (chatToggleBtn && chatToggleBtn.classList.contains('hidden')) {
+            chatToggleBtn.classList.remove('hidden');
         }
     });
 
