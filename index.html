@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mecho Chameleon</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+
+        <!-- ====== MAIN MENU ====== -->
+        <div id="main-menu" class="screen active">
+            <h1 class="neon-text title">MECHO<br>CHAMELEON</h1>
+            <p class="subtitle">Cyber-Stealth Survival IO</p>
+            <div class="menu-buttons-container">
+                <button id="play-btn" class="neon-button">▶ PLAY</button>
+                <button id="mp-btn" class="neon-button mp-button">🌐 MULTIPLAYER</button>
+                <button id="shop-btn" class="neon-button shop-button">🛒 SHOP</button>
+            </div>
+            
+            <div class="coins-display menu-coins">
+                <span class="coin-icon">🪙</span>
+                <span id="menuCoinsDisplay">0</span>
+            </div>
+
+            <div class="menu-lower">
+                <div class="leaderboard-preview">
+                    <h3>🏆 TOP SCORES</h3>
+                    <ul id="leaderboard-list">
+                        <li>1. CyberLizard — 42,850</li>
+                        <li>2. NeonNinja — 31,200</li>
+                        <li>3. GearHead — 19,500</li>
+                    </ul>
+                </div>
+                <div class="instructions">
+                    <img src="tutorial.png" alt="Hướng dẫn chơi" class="tutorial-img">
+                    <p class="tutorial-note">Wave 10, 20, 30... = BOSS | Giết BOSS nhận BUFF vũ khí</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== HUD ====== -->
+        <div id="hud" class="screen hidden">
+            <!-- Multiplayer player labels -->
+            <div id="p1-label" class="player-label p1-label hidden">👤 P1 — YOU</div>
+            <!-- Opponent HP bar (PvP only) -->
+            <div id="opp-hp-container" class="opp-hp-container hidden">
+                <span class="label opp-label">⚔ ENEMY HP</span>
+                <div class="opp-hp-track">
+                    <div id="oppHealthBar" class="opp-hp-fill"></div>
+                </div>
+            </div>
+            <div class="top-bar">
+                <div class="score-container">
+                    <span class="label">SCORE</span>
+                    <span id="scoreDisplay">0</span>
+                </div>
+                <div class="wave-container">
+                    <span class="label">WAVE</span>
+                    <span id="waveDisplay">1</span>
+                </div>
+                <div class="gears-container">
+                    <span class="label">GEAR</span>
+                    <span id="gearsDisplay">0</span>
+                </div>
+            </div>
+
+            <div id="wave-announce" class="hidden">WAVE 1</div>
+
+            <div class="bottom-bar">
+                <div class="health-bar-container">
+                    <div id="healthBar" class="health-bar-fill"></div>
+                </div>
+                <div class="stealth-cooldown-container">
+                    <span class="label">STEALTH</span>
+                    <div id="stealthCooldownBar" class="cooldown-bar-fill ready">READY</div>
+                </div>
+            </div>
+
+            <div id="upgrade-notification" class="hidden"></div>
+        </div>
+
+        <!-- ====== MODE SELECT ====== -->
+        <div id="mode-select" class="screen hidden">
+            <h1 class="neon-text title">MULTI<br>PLAYER</h1>
+            <p class="subtitle">Chọn chế độ chơi</p>
+            <div class="mode-buttons">
+                <button id="coop-btn" class="neon-button mode-card">
+                    <span class="mode-icon">🤝</span>
+                    <span class="mode-name">CO-OP</span>
+                    <span class="mode-desc">Cùng nhau chiến đấu chống Enemies</span>
+                </button>
+                <button id="pvp-btn" class="neon-button mode-card pvp-card">
+                    <span class="mode-icon">⚔</span>
+                    <span class="mode-name">PvP</span>
+                    <span class="mode-desc">Đấu tay đôi — Ai giết ai trước thắng!</span>
+                </button>
+            </div>
+            <button id="back-from-mode" class="back-btn">← Quay lại</button>
+        </div>
+
+        <!-- ====== LOBBY / WAITING ====== -->
+        <div id="lobby-screen" class="screen hidden">
+            <div class="lobby-card">
+                <div id="lobby-mode-label" class="lobby-mode-tag">🤝 CO-OP</div>
+                <div class="lobby-spinner-wrap">
+                    <div class="lobby-spinner"></div>
+                    <div class="lobby-spinner-inner"></div>
+                </div>
+                <p id="lobby-status" class="lobby-status">🔄 Đang kết nối...</p>
+                <p class="lobby-tip">📡 Chạy <code>ngrok http 3000</code> rồi gửi link cho bạn!</p>
+                <button id="cancel-lobby-btn" class="back-btn">✕ Hủy</button>
+            </div>
+        </div>
+
+        <!-- ====== VICTORY (PvP) ====== -->
+        <div id="victory-screen" class="screen hidden">
+            <h1 class="neon-text victory-text">🏆 CHIẾN THẮNG!</h1>
+            <div class="stats">
+                <p>Score: <span id="victoryScore">0</span></p>
+                <p>Gears: <span id="victoryGears">0</span></p>
+            </div>
+            <button id="victory-restart-btn" class="neon-button">↺ Chơi lại</button>
+            <button id="menu-from-victory-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
+        </div>
+
+        <!-- ====== GAME OVER ====== -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1 class="neon-text red-neon">SYSTEM FAILURE</h1>
+            <div class="stats">
+                <p>Score: <span id="finalScore">0</span></p>
+                <p>Gears: <span id="finalGears">0</span></p>
+                <p>Wave Reached: <span id="finalWave">0</span></p>
+            </div>
+            <button id="restart-btn" class="neon-button">↺ RESTART</button>
+            <button id="menu-from-gameover-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
+        </div>
+
+        <!-- ====== SHOP SCREEN ====== -->
+        <div id="shop-screen" class="screen hidden">
+            <div class="shop-header">
+                <h1 class="neon-text title shop-title">BLACK MARKET</h1>
+                <div class="coins-display shop-coins">
+                    <span class="coin-icon">🪙</span>
+                    <span id="shopCoinsDisplay">0</span>
+                </div>
+            </div>
+            <div class="shop-grid">
+                <!-- Item 1: Neon Armor -->
+                <div class="shop-item" data-item="armor">
+                    <div class="item-icon">🛡️</div>
+                    <div class="item-info">
+                        <h3>Neon Armor</h3>
+                        <p>Tăng 50 Máu Tối Đa. Trang bị lớp giáp ánh sáng bảo vệ.</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="buy-btn" data-price="5000">5000 🪙</button>
+                    </div>
+                </div>
+                <!-- Item 2: Mecha Arms -->
+                <div class="shop-item" data-item="arms">
+                    <div class="item-icon">🦾</div>
+                    <div class="item-info">
+                        <h3>Mecha Arms</h3>
+                        <p>2 Cánh tay Robot trôi nổi trên lưng. Tự động đấm/bắn phụ bạn khi tấn công.</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="buy-btn" data-price="12000">12000 🪙</button>
+                    </div>
+                </div>
+                <!-- Item 3: Plasma Core -->
+                <div class="shop-item" data-item="core">
+                    <div class="item-icon">🌀</div>
+                    <div class="item-info">
+                        <h3>Plasma Core</h3>
+                        <p>Đổi màu hiệu ứng Tắc Kè sang Đỏ rực. Tăng Tốc độ chạy.</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="buy-btn" data-price="3000">3000 🪙</button>
+                    </div>
+                </div>
+            </div>
+            <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
+        </div>
+
+    </div><!-- /ui-layer -->
+</div><!-- /game-container -->
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/System.js"></script>
+<script src="js/Collectible.js"></script>
+<script src="js/Enemy.js"></script>
+<script src="js/Player.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
