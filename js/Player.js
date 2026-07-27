@@ -170,8 +170,8 @@ class Player {
             if (this.stealthCooldown < this.maxStealthCooldown - 90) this.emergencyStealthActive = false;
         }
         if (this.emergencyStealthActive)    this.stealthLevel = Math.min(1, this.stealthLevel + 0.12);
-        else if (!this.isMoving)            this.stealthLevel = Math.min(0.85, this.stealthLevel + 0.012);
-        else                                this.stealthLevel = Math.max(0, this.stealthLevel - 0.05);
+        else if (!this.isMoving)            this.stealthLevel = Math.min(0.35, this.stealthLevel + 0.012); // passive stealth: max 35% fade
+        else                                this.stealthLevel = Math.max(0, this.stealthLevel - 0.08); // fade out quickly when moving
 
         // Tongue Logic
         if (this.tongueCooldown > 0) this.tongueCooldown--;
@@ -414,7 +414,7 @@ class Player {
         }
         
         const col   = `hsl(${hueToUse}, 100%, 55%)`;
-        const alpha = Math.max(0.07, 1 - this.stealthLevel);
+        const alpha = Math.max(0.25, 1 - this.stealthLevel); // minimum 25% so player always visible
 
         // Draw bullets first (behind body)
         this.bullets.forEach(b => b.draw(ctx));
