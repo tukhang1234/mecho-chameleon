@@ -5,6 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mecho Chameleon</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Inline critical CSS to bypass cache */
+        #chat-container {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            background: rgba(0,0,0,0.85);
+            border: 2px solid #39ff14;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: 0 0 15px rgba(57,255,20,0.3);
+            backdrop-filter: blur(5px);
+        }
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .chat-msg {
+            background: rgba(57,255,20,0.1);
+            padding: 5px 8px;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+        .chat-msg.self { border-left: 3px solid #39ff14; }
+        .chat-msg.other { border-left: 3px solid #ff003c; }
+        #chat-input-container {
+            display: flex;
+            border-top: 1px solid #39ff14;
+            padding: 5px;
+        }
+        #chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #39ff14;
+            outline: none;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 5px;
+        }
+        #chat-send-btn {
+            background: #39ff14;
+            color: black;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0 15px;
+            border-radius: 3px;
+        }
+        #chat-toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #39ff14;
+            color: #39ff14;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 0 10px rgba(57,255,20,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -86,18 +164,6 @@
             <div id="auto-aim-container" class="hidden">
                 <button id="auto-aim-btn" class="neon-button small-btn active">AUTO-AIM: ON</button>
                 <div class="aim-hint">Nhấn SHIFT để bắn</div>
-            </div>
-
-            <!-- Chat Toggle Button (Top Right corner inside HUD) -->
-            <button id="chat-toggle-btn" class="chat-toggle-btn hidden">💬</button>
-
-            <!-- Chat Window -->
-            <div id="chat-window" class="chat-window hidden">
-                <div id="chat-messages" class="chat-messages"></div>
-                <div class="chat-input-container">
-                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
-                    <button id="chat-send-btn">Gửi</button>
-                </div>
             </div>
 
             <div id="upgrade-notification" class="hidden"></div>
@@ -188,7 +254,51 @@
                         <p>Bấm vào đây để chọn 3 mẫu Cánh tay Robot siêu ngầu.</p>
                     </div>
                 </div>
-
+                
+                <!-- Sub-items for Mecha Arms -->
+                <div id="mecha-arms-submenu" class="shop-submenu hidden">
+                    <div class="shop-item sub-item" data-item="arms_m1">
+                        <div class="item-icon">🥊</div>
+                        <div class="item-info">
+                            <h3>Model 1: Brawler</h3>
+                            <p>Tự động tung cú đấm trời giáng khi kẻ thù áp sát.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="5000">5000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item sub-item" data-item="arms_m2">
+                        <div class="item-icon">🔫🗡️</div>
+                        <div class="item-info">
+                            <h3>Model 2: Gun & Dagger</h3>
+                            <p>Tay trái cầm Dao găm, tay phải Súng năng lượng. Tầm quét x2. (Hỗ trợ Manual Aim).</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="15000">15000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item sub-item" data-item="arms_m3">
+                        <div class="item-icon">🚀</div>
+                        <div class="item-info">
+                            <h3>Model 3: Heavy Gunner</h3>
+                            <p>2 Súng năng lượng ở cánh tay + 2 Súng lục ở bàn tay. Hỏa lực tối đa!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="30000">30000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item sub-item special-item" data-item="arms_m4">
+                        <div class="item-icon">🌟🦾</div>
+                        <div class="item-info">
+                            <h3 style="color: #ffaa00; text-shadow: 0 0 5px #ffaa00;">Model 4: Supreme 4-Arms</h3>
+                            <p>Sức mạnh tối thượng. Mọc 4 cánh tay độc lập: 2 Laser hủy diệt + 2 Súng liên thanh!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="60000" style="border-color: #ffaa00; color: #ffaa00;">60000 🪙</button>
+                        </div>
+                    </div>
+                    <button id="close-submenu-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Shop</button>
+                </div>
                 <!-- Item 3: Plasma Core -->
                 <div class="shop-item" data-item="core">
                     <div class="item-icon">🌀</div>
@@ -204,60 +314,6 @@
             <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
         </div>
 
-        <!-- ====== MECHA ARMS SCREEN ====== -->
-        <div id="mecha-arms-screen" class="screen hidden">
-            <div class="shop-header">
-                <h1 class="neon-text title shop-title">MECHA ARMS</h1>
-                <div class="coins-display shop-coins">
-                    <span class="coin-icon">🪙</span>
-                    <span id="mechaCoinsDisplay">0</span>
-                </div>
-            </div>
-            <div class="shop-grid">
-                <div class="shop-item sub-item" data-item="arms_m1">
-                    <div class="item-icon">🥊</div>
-                    <div class="item-info">
-                        <h3>Model 1: Brawler</h3>
-                        <p>Cú đấm kép trời giáng khi kẻ thù áp sát. (Tầm đánh x2)</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="5000">5000 🪙</button>
-                    </div>
-                </div>
-                <div class="shop-item sub-item" data-item="arms_m2">
-                    <div class="item-icon">🔫🗡️</div>
-                    <div class="item-info">
-                        <h3>Model 2: Gun & Dagger</h3>
-                        <p>Dao găm tầm xa và Súng năng lượng.</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="15000">15000 🪙</button>
-                    </div>
-                </div>
-                <div class="shop-item sub-item" data-item="arms_m3">
-                    <div class="item-icon">🚀</div>
-                    <div class="item-info">
-                        <h3>Model 3: Heavy Gunner</h3>
-                        <p>2 Súng cánh tay + 2 Súng lục cầm tay. Hỏa lực tối đa!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="30000">30000 🪙</button>
-                    </div>
-                </div>
-                <div class="shop-item sub-item" data-item="arms_m4">
-                    <div class="item-icon">🔥</div>
-                    <div class="item-info">
-                        <h3>Model 4: Ultimate</h3>
-                        <p>4 Cánh tay: 2 Laser bạo chúa + 2 Súng càn quét. Trùm cuối vũ khí!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="50000">50000 🪙</button>
-                    </div>
-                </div>
-            </div>
-            <button id="back-from-mecha-arms" class="back-btn">← Quay lại Menu</button>
-        </div>
-
     </div><!-- /ui-layer -->
 </div><!-- /game-container -->
 
@@ -269,3 +325,4 @@
 <script src="js/main.js"></script>
 </body>
 </html>
+

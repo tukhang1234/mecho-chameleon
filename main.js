@@ -75,8 +75,8 @@ let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
 if (coins < 100000) {
     coins = 100000;
 }
-let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, core: false };
-let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, core: false };
+let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
+let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
 
 let bossAlive    = false;
 let boss         = null;
@@ -221,13 +221,26 @@ function initGame() {
     modeSelectScr.classList.add('hidden');
     lobbyScr.classList.add('hidden');
     hud.classList.remove('hidden');
+    
+    // Auto Aim HUD logic
+    const autoAimContainer = document.getElementById('auto-aim-container');
+    if (autoAimContainer) {
+        if (equippedItems.arms_m2 || equippedItems.arms_m3) {
+            autoAimContainer.classList.remove('hidden');
+        } else {
+            autoAimContainer.classList.add('hidden');
+        }
+    }
 
     // Multiplayer HUD elements
     if (mpMode) {
         p1Label.classList.remove('hidden');
         p1Label.innerText = playerIndex === 1 ? '👤 P1 — YOU (HOST)' : '👤 P2 — YOU';
+        document.getElementById('chat-toggle-btn').classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
+        document.getElementById('chat-toggle-btn').classList.add('hidden');
+        document.getElementById('chat-container').classList.add('hidden');
     }
 
     if (mpMode === 'pvp') {
@@ -923,9 +936,18 @@ if (autoAimBtn) {
 // ==========================
 const mechaArmsCat = document.getElementById('mecha-arms-category');
 const mechaArmsSub = document.getElementById('mecha-arms-submenu');
+const closeSubmenuBtn = document.getElementById('close-submenu-btn');
+const shopGrid = document.querySelector('.shop-grid');
 if (mechaArmsCat && mechaArmsSub) {
     mechaArmsCat.addEventListener('click', () => {
-        mechaArmsSub.classList.toggle('hidden');
+        mechaArmsSub.classList.remove('hidden');
+        shopGrid.classList.add('submenu-active');
+    });
+}
+if (closeSubmenuBtn) {
+    closeSubmenuBtn.addEventListener('click', () => {
+        mechaArmsSub.classList.add('hidden');
+        shopGrid.classList.remove('submenu-active');
     });
 }
 
@@ -961,6 +983,7 @@ document.addEventListener('click', (e) => {
                     equippedItems.arms_m1 = false;
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
+                    equippedItems.arms_m4 = false;
                 }
                 equippedItems[itemType] = true;
                 saveGameData();
@@ -982,6 +1005,7 @@ document.addEventListener('click', (e) => {
                     equippedItems.arms_m1 = false;
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
+                    equippedItems.arms_m4 = false;
                 }
                 equippedItems[itemType] = true;
             } else {
@@ -991,7 +1015,7 @@ document.addEventListener('click', (e) => {
             updateShopUI();
             if (audio) audio.playSound('pickup');
         }
-    });
+    }
 });
 
 restartBtn.addEventListener('click', (e) => {
@@ -1091,6 +1115,12 @@ function findMatch(mode) {
 function setupSocketListeners() {
     socket.on('waiting', () => {
         lobbyStatus.innerText = '⏳ Đang chờ người chơi thứ 2...';
+    });
+
+    socket.on('chatMessage', (text) => {
+        if (typeof appendChatMessage === 'function') {
+            appendChatMessage("Đồng đội", text, "other");
+        }
     });
 
     socket.on('match_found', ({ mode, playerIndex: idx }) => {
@@ -1195,6 +1225,10 @@ function sendPlayerState() {
         damageMultiplier: player.damageMultiplier,
         bullets:       player.bullets.map(b => ({ x: b.x, y: b.y, color: b.color, radius: b.radius })),
         health:        playerHealth,
+        equipped:      player.equipped,
+        armsPunchAnimL: player.armsPunchAnimL,
+        armsPunchAnimR: player.armsPunchAnimR,
+        armsAngle:     player.armsAngle
     });
 }
 
@@ -1294,6 +1328,12 @@ function drawOpponent(ctx) {
     // Body
     ctx.save();
     ctx.globalAlpha = alpha;
+
+    // Robot Arms for Opponent
+    if (opponentState.equipped && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
+        opponentState.radius = radius; // Ensure radius is set for drawing
+        Player.prototype._drawRobotArms.call(opponentState, ctx, alpha, col);
+    }
 
     // Outer glow ring
     ctx.beginPath();
@@ -1409,3 +1449,47 @@ function drawRemoteEnemies(ctx) {
         }
     }
 }
+
+// ==========================
+// CHAT LOGIC
+// ==========================
+const chatToggleBtn = document.getElementById("chat-toggle-btn");
+const chatContainer = document.getElementById("chat-container");
+const chatInput = document.getElementById("chat-input");
+const chatSendBtn = document.getElementById("chat-send-btn");
+const chatMessages = document.getElementById("chat-messages");
+
+if (chatToggleBtn && chatContainer) {
+    chatToggleBtn.addEventListener("click", () => {
+        chatContainer.classList.toggle("hidden");
+        if (!chatContainer.classList.contains("hidden")) {
+            chatInput.focus();
+        }
+    });
+}
+
+function appendChatMessage(sender, text, type) {
+    if (!chatMessages) return;
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("chat-msg");
+    if (type) msgDiv.classList.add(type);
+    msgDiv.innerText = `[${sender}]: ${text}`;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+if (chatSendBtn && chatInput) {
+    const sendMessage = () => {
+        const text = chatInput.value.trim();
+        if (text && socket) {
+            socket.emit("chatMessage", text);
+            appendChatMessage("B?n", text, "self");
+            chatInput.value = "";
+        }
+    };
+    chatSendBtn.addEventListener("click", sendMessage);
+    chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+}
+

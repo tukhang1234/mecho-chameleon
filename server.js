@@ -134,9 +134,9 @@ io.on('connection', (socket) => {
     });
 
     // ── Relay: chat message ────────────────────────────────────────
-    socket.on('chat_message', (data) => {
+    socket.on('chatMessage', (text) => {
         const { roomId } = socket.data;
-        if (roomId) socket.to(roomId).emit('chat_message', data);
+        if (roomId) socket.to(roomId).emit('chatMessage', text);
     });
 
     // ── Disconnect ────────────────────────────────────────────────
