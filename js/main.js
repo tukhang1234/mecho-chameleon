@@ -221,6 +221,16 @@ function initGame() {
     modeSelectScr.classList.add('hidden');
     lobbyScr.classList.add('hidden');
     hud.classList.remove('hidden');
+    
+    // Auto Aim HUD logic
+    const autoAimContainer = document.getElementById('auto-aim-container');
+    if (autoAimContainer) {
+        if (equippedItems.arms_m2 || equippedItems.arms_m3) {
+            autoAimContainer.classList.remove('hidden');
+        } else {
+            autoAimContainer.classList.add('hidden');
+        }
+    }
 
     // Multiplayer HUD elements
     if (mpMode) {
