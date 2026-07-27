@@ -166,6 +166,8 @@ function saveGameData() {
 function updateShopUI() {
     menuCoinsDisplay.innerText = coins;
     shopCoinsDisplay.innerText = coins;
+    const armsDisp = document.getElementById('armsCoinsDisplay');
+    if (armsDisp) armsDisp.innerText = coins;
 
     const allItems = document.querySelectorAll('.shop-item[data-item]');
     allItems.forEach(el => {
@@ -934,20 +936,27 @@ if (autoAimBtn) {
 // ==========================
 // SHOP LOGIC
 // ==========================
-const mechaArmsCat = document.getElementById('mecha-arms-category');
-const mechaArmsSub = document.getElementById('mecha-arms-submenu');
-const closeSubmenuBtn = document.getElementById('close-submenu-btn');
-const shopGrid = document.querySelector('.shop-grid');
-if (mechaArmsCat && mechaArmsSub) {
+const mechaArmsCat   = document.getElementById('mecha-arms-category');
+const mechaArmsPanel = document.getElementById('mecha-arms-panel');
+const backFromArms   = document.getElementById('back-from-arms');
+const armsCoinsDisplay = document.getElementById('armsCoinsDisplay');
+
+if (mechaArmsCat) {
     mechaArmsCat.addEventListener('click', () => {
-        mechaArmsSub.classList.remove('hidden');
-        shopGrid.classList.add('submenu-active');
+        // Open Mecha Arms sub-panel
+        shopScreen.classList.add('hidden');
+        mechaArmsPanel.classList.remove('hidden');
+        if (armsCoinsDisplay) armsCoinsDisplay.innerText = coins;
+        updateShopUI();
     });
 }
-if (closeSubmenuBtn) {
-    closeSubmenuBtn.addEventListener('click', () => {
-        mechaArmsSub.classList.add('hidden');
-        shopGrid.classList.remove('submenu-active');
+
+if (backFromArms) {
+    backFromArms.addEventListener('click', (e) => {
+        e.target.blur();
+        mechaArmsPanel.classList.add('hidden');
+        shopScreen.classList.remove('hidden');
+        updateShopUI();
     });
 }
 
@@ -1332,10 +1341,7 @@ function drawOpponent(ctx) {
     // Robot Arms for Opponent
     if (opponentState.equipped && (stealthLevel || 0) < 0.8 && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
         opponentState.radius = radius; // Ensure radius is set for drawing
-        ctx.save();
-        ctx.translate(x, y);
         Player.prototype._drawRobotArms.call(opponentState, ctx, alpha, col);
-        ctx.restore();
     }
 
     // Outer glow ring
