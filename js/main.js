@@ -75,8 +75,8 @@ let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
 if (coins < 100000) {
     coins = 100000;
 }
-let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, core: false };
-let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, core: false };
+let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
+let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
 
 let bossAlive    = false;
 let boss         = null;
@@ -236,8 +236,11 @@ function initGame() {
     if (mpMode) {
         p1Label.classList.remove('hidden');
         p1Label.innerText = playerIndex === 1 ? '👤 P1 — YOU (HOST)' : '👤 P2 — YOU';
+        document.getElementById('chat-toggle-btn').classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
+        document.getElementById('chat-toggle-btn').classList.add('hidden');
+        document.getElementById('chat-container').classList.add('hidden');
     }
 
     if (mpMode === 'pvp') {
@@ -246,16 +249,6 @@ function initGame() {
         updateOppHealthBar(100);
     } else {
         oppHPContainer.classList.add('hidden');
-    }
-
-    // Chat UI integration
-    if (mpMode) {
-        if (chatToggleBtn) chatToggleBtn.classList.remove('hidden');
-        if (chatWindow) chatWindow.classList.add('hidden'); // Close by default
-        if (chatMessages) chatMessages.innerHTML = ''; // Clear chat history
-    } else {
-        if (chatToggleBtn) chatToggleBtn.classList.add('hidden');
-        if (chatWindow) chatWindow.classList.add('hidden');
     }
 
     audio.stopMusic();
@@ -942,65 +935,20 @@ if (autoAimBtn) {
 // SHOP LOGIC
 // ==========================
 const mechaArmsCat = document.getElementById('mecha-arms-category');
-const mechaArmsScreen = document.getElementById('mecha-arms-screen');
-const backFromMechaArms = document.getElementById('back-from-mecha-arms');
-
-if (mechaArmsCat && mechaArmsScreen) {
+const mechaArmsSub = document.getElementById('mecha-arms-submenu');
+const closeSubmenuBtn = document.getElementById('close-submenu-btn');
+const shopGrid = document.querySelector('.shop-grid');
+if (mechaArmsCat && mechaArmsSub) {
     mechaArmsCat.addEventListener('click', () => {
-        shopScreen.classList.add('hidden');
-        mechaArmsScreen.classList.remove('hidden');
-        document.getElementById('mechaCoinsDisplay').innerText = coins;
+        mechaArmsSub.classList.remove('hidden');
+        shopGrid.classList.add('submenu-active');
     });
 }
-if (backFromMechaArms) {
-    backFromMechaArms.addEventListener('click', () => {
-        mechaArmsScreen.classList.add('hidden');
-        shopScreen.classList.remove('hidden');
-        updateShopUI();
+if (closeSubmenuBtn) {
+    closeSubmenuBtn.addEventListener('click', () => {
+        mechaArmsSub.classList.add('hidden');
+        shopGrid.classList.remove('submenu-active');
     });
-}
-
-// ==========================
-// CHAT UI LOGIC
-// ==========================
-const chatToggleBtn = document.getElementById('chat-toggle-btn');
-const chatWindow = document.getElementById('chat-window');
-const chatInput = document.getElementById('chat-input');
-const chatSendBtn = document.getElementById('chat-send-btn');
-const chatMessages = document.getElementById('chat-messages');
-
-if (chatToggleBtn && chatWindow) {
-    chatToggleBtn.addEventListener('click', () => {
-        chatWindow.classList.toggle('hidden');
-        if (!chatWindow.classList.contains('hidden')) {
-            chatInput.focus();
-        }
-    });
-
-    function sendChatMessage() {
-        const msg = chatInput.value.trim();
-        if (msg !== '' && socket && mpMode) {
-            socket.emit('chat_message', { msg, playerIndex });
-            appendChatMessage(playerIndex, msg);
-            chatInput.value = '';
-        }
-    }
-
-    chatSendBtn.addEventListener('click', sendChatMessage);
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendChatMessage();
-    });
-}
-
-function appendChatMessage(pIndex, text) {
-    if (!chatMessages) return;
-    const div = document.createElement('div');
-    div.className = 'chat-msg';
-    const pClass = pIndex === 1 ? 'p1' : 'p2';
-    const pLabel = pIndex === 1 ? 'P1' : 'P2';
-    div.innerHTML = `<span class="${pClass}">[${pLabel}]</span>: ${text}`;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 shopBtn.addEventListener('click', (e) => {
@@ -1169,6 +1117,12 @@ function setupSocketListeners() {
         lobbyStatus.innerText = '⏳ Đang chờ người chơi thứ 2...';
     });
 
+    socket.on('chatMessage', (text) => {
+        if (typeof appendChatMessage === 'function') {
+            appendChatMessage("Đồng đội", text, "other");
+        }
+    });
+
     socket.on('match_found', ({ mode, playerIndex: idx }) => {
         mpMode = mode;
         playerIndex = idx;
@@ -1236,18 +1190,6 @@ function setupSocketListeners() {
         }
     });
 
-    socket.on('opponent_restart', () => {
-        if (gameState !== 'playing') initGame();
-    });
-
-    socket.on('chat_message', (data) => {
-        appendChatMessage(data.playerIndex, data.msg);
-        // Show chat button if hidden or notify
-        if (chatToggleBtn && chatToggleBtn.classList.contains('hidden')) {
-            chatToggleBtn.classList.remove('hidden');
-        }
-    });
-
     socket.on('opponent_disconnected', () => {
         if (gameState === 'playing') {
             showWaveAnnounce('⚠ Đối thủ ngắt kết nối!');
@@ -1283,6 +1225,10 @@ function sendPlayerState() {
         damageMultiplier: player.damageMultiplier,
         bullets:       player.bullets.map(b => ({ x: b.x, y: b.y, color: b.color, radius: b.radius })),
         health:        playerHealth,
+        equipped:      player.equipped,
+        armsPunchAnimL: player.armsPunchAnimL,
+        armsPunchAnimR: player.armsPunchAnimR,
+        armsAngle:     player.armsAngle
     });
 }
 
@@ -1382,6 +1328,12 @@ function drawOpponent(ctx) {
     // Body
     ctx.save();
     ctx.globalAlpha = alpha;
+
+    // Robot Arms for Opponent
+    if (opponentState.equipped && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
+        opponentState.radius = radius; // Ensure radius is set for drawing
+        Player.prototype._drawRobotArms.call(opponentState, ctx, alpha, col);
+    }
 
     // Outer glow ring
     ctx.beginPath();
@@ -1497,3 +1449,47 @@ function drawRemoteEnemies(ctx) {
         }
     }
 }
+
+// ==========================
+// CHAT LOGIC
+// ==========================
+const chatToggleBtn = document.getElementById("chat-toggle-btn");
+const chatContainer = document.getElementById("chat-container");
+const chatInput = document.getElementById("chat-input");
+const chatSendBtn = document.getElementById("chat-send-btn");
+const chatMessages = document.getElementById("chat-messages");
+
+if (chatToggleBtn && chatContainer) {
+    chatToggleBtn.addEventListener("click", () => {
+        chatContainer.classList.toggle("hidden");
+        if (!chatContainer.classList.contains("hidden")) {
+            chatInput.focus();
+        }
+    });
+}
+
+function appendChatMessage(sender, text, type) {
+    if (!chatMessages) return;
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("chat-msg");
+    if (type) msgDiv.classList.add(type);
+    msgDiv.innerText = `[${sender}]: ${text}`;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+if (chatSendBtn && chatInput) {
+    const sendMessage = () => {
+        const text = chatInput.value.trim();
+        if (text && socket) {
+            socket.emit("chatMessage", text);
+            appendChatMessage("B?n", text, "self");
+            chatInput.value = "";
+        }
+    };
+    chatSendBtn.addEventListener("click", sendMessage);
+    chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+}
+
