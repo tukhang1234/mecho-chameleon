@@ -235,11 +235,58 @@
                 </div>
             </div>
             <div class="shop-grid">
+                <!-- Item 1: Neon Armor -->
+                <div class="shop-item" data-item="armor">
+                    <div class="item-icon">🛡️</div>
+                    <div class="item-info">
+                        <h3>Neon Armor</h3>
+                        <p>Tăng 50 Máu Tối Đa. Trang bị lớp giáp ánh sáng bảo vệ.</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="buy-btn" data-price="5000">5000 🪙</button>
+                    </div>
+                </div>
+                <!-- Item 2: Mecha Arms (click to open sub-panel) -->
+                <div class="shop-item expandable" id="mecha-arms-category">
+                    <div class="item-icon">🦾</div>
+                    <div class="item-info">
+                        <h3>Mecha Arms</h3>
+                        <p>Bấm để chọn 4 mẫu Cánh tay Robot siêu ngầu.</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="expand-btn">CHỌN MẪU →</button>
+                    </div>
+                </div>
+                <!-- Item 3: Plasma Core -->
+                <div class="shop-item" data-item="core">
+                    <div class="item-icon">🌀</div>
+                    <div class="item-info">
+                        <h3>Plasma Core</h3>
+                        <p>Đổi màu hiệu ứng Tắc Kè sang Đỏ rực. Tăng tốc độ chạy.</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="buy-btn" data-price="3000">3000 🪙</button>
+                    </div>
+                </div>
+            </div>
+            <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
+        </div>
+
+        <!-- ====== MECHA ARMS SUB-PANEL (overlay) ====== -->
+        <div id="mecha-arms-panel" class="screen hidden">
+            <div class="shop-header">
+                <h1 class="neon-text title shop-title" style="font-size: 1.6rem;">🦾 MECHA ARMS</h1>
+                <div class="coins-display shop-coins">
+                    <span class="coin-icon">🪙</span>
+                    <span id="armsCoinsDisplay">0</span>
+                </div>
+            </div>
+            <div class="shop-grid">
                 <div class="shop-item" data-item="arms_m1">
                     <div class="item-icon">🥊</div>
                     <div class="item-info">
-                        <h3>Model 1: Brawler</h3>
-                        <p>Tự động tung cú đấm trời giáng khi kẻ thù áp sát.</p>
+                        <h3>Model 1 — Brawler</h3>
+                        <p>Tự động tung cú đấm khi kẻ thù áp sát từ cả 2 bên. Phạm vi đánh rộng.</p>
                     </div>
                     <div class="item-action">
                         <button class="buy-btn" data-price="5000">5000 🪙</button>
@@ -248,8 +295,8 @@
                 <div class="shop-item" data-item="arms_m2">
                     <div class="item-icon">🔫🗡️</div>
                     <div class="item-info">
-                        <h3>Model 2: Gun & Dagger</h3>
-                        <p>Tay trái cầm Dao găm, tay phải Súng năng lượng. Tầm quét x2. (Hỗ trợ Manual Aim).</p>
+                        <h3>Model 2 — Gun & Dagger</h3>
+                        <p>Tay trái: Dao găm đâm tự động. Tay phải: Súng năng lượng. Hỗ trợ Auto/Manual Aim.</p>
                     </div>
                     <div class="item-action">
                         <button class="buy-btn" data-price="15000">15000 🪙</button>
@@ -258,7 +305,7 @@
                 <div class="shop-item" data-item="arms_m3">
                     <div class="item-icon">🚀</div>
                     <div class="item-info">
-                        <h3>Model 3: Heavy Gunner</h3>
+                        <h3>Model 3 — Heavy Gunner</h3>
                         <p>2 Súng năng lượng ở cánh tay + 2 Súng lục ở bàn tay. Hỏa lực tối đa!</p>
                     </div>
                     <div class="item-action">
@@ -268,15 +315,15 @@
                 <div class="shop-item special-item" data-item="arms_m4">
                     <div class="item-icon">🌟🦾</div>
                     <div class="item-info">
-                        <h3 style="color: #ffaa00; text-shadow: 0 0 5px #ffaa00;">Model 4: Supreme 4-Arms</h3>
-                        <p>Sức mạnh tối thượng. Mọc 4 cánh tay độc lập: 2 Laser hủy diệt + 2 Súng liên thanh!</p>
+                        <h3 style="color: #ffaa00; text-shadow: 0 0 5px #ffaa00;">Model 4 — Supreme 4-Arms</h3>
+                        <p>Sức mạnh tối thượng. 4 cánh tay độc lập: 2 Laser siêu mạnh + 2 Súng liên thanh!</p>
                     </div>
                     <div class="item-action">
                         <button class="buy-btn" data-price="60000" style="border-color: #ffaa00; color: #ffaa00;">60000 🪙</button>
                     </div>
                 </div>
             </div>
-            <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
+            <button id="back-from-arms" class="back-btn">← Quay lại Shop</button>
         </div>
 
     </div><!-- /ui-layer -->

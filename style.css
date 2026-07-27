@@ -1009,6 +1009,30 @@ h1, h2, h3, .label {
 .chat-msg span.p2 { color: #ff00ff; }
 
 
-.shop-grid.submenu-active > .shop-item {
-    display: none !important;
+
+/* Expand (Mecha Arms chooser) button */
+.expand-btn {
+    background: linear-gradient(135deg, rgba(0,243,255,0.15), rgba(57,255,20,0.15));
+    border: 1px solid #00f3ff;
+    color: #00f3ff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
 }
+.expand-btn:hover {
+    background: rgba(0,243,255,0.3);
+    box-shadow: 0 0 12px rgba(0,243,255,0.6);
+    transform: scale(1.05);
+}
+
+/* Mecha Arms panel — full screen overlay like shop */
+#mecha-arms-panel {
+    background: var(--bg);
+}
+
