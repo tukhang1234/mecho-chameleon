@@ -60,6 +60,7 @@ let powerups     = [];
 // Input
 const keys  = {};
 const mouse = { x: 0, y: 0, down: false };
+let autoAimEnabled = true;
 
 // Game Data
 let score = 0, gears = 0, playerHealth = 100, maxPlayerHealth = 100;
@@ -74,8 +75,8 @@ let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
 if (coins < 100000) {
     coins = 100000;
 }
-let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms: false, core: false };
-let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms: false, core: false };
+let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, core: false };
+let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, core: false };
 
 let bossAlive    = false;
 let boss         = null;
@@ -166,7 +167,8 @@ function updateShopUI() {
     menuCoinsDisplay.innerText = coins;
     shopCoinsDisplay.innerText = coins;
 
-    shopItems.forEach(el => {
+    const allItems = document.querySelectorAll('.shop-item[data-item]');
+    allItems.forEach(el => {
         const itemType = el.getAttribute('data-item');
         const btn = el.querySelector('.buy-btn');
         const price = parseInt(btn.getAttribute('data-price'));
@@ -899,8 +901,37 @@ playBtn.addEventListener('click', (e) => {
     initGame();
 });
 
+// ==========================
+// AUTO AIM TOGGLE
+// ==========================
+const autoAimBtn = document.getElementById('auto-aim-btn');
+if (autoAimBtn) {
+    autoAimBtn.addEventListener('click', () => {
+        autoAimEnabled = !autoAimEnabled;
+        if (autoAimEnabled) {
+            autoAimBtn.innerText = 'AUTO-AIM: ON';
+            autoAimBtn.classList.add('active');
+        } else {
+            autoAimBtn.innerText = 'AUTO-AIM: OFF';
+            autoAimBtn.classList.remove('active');
+        }
+    });
+}
+
+// ==========================
+// SHOP LOGIC
+// ==========================
+const mechaArmsCat = document.getElementById('mecha-arms-category');
+const mechaArmsSub = document.getElementById('mecha-arms-submenu');
+if (mechaArmsCat && mechaArmsSub) {
+    mechaArmsCat.addEventListener('click', () => {
+        mechaArmsSub.classList.toggle('hidden');
+    });
+}
+
 shopBtn.addEventListener('click', (e) => {
     e.target.blur();
+    gameState = 'shop';
     mainMenu.classList.add('hidden');
     shopScreen.classList.remove('hidden');
     updateShopUI();
@@ -908,39 +939,54 @@ shopBtn.addEventListener('click', (e) => {
 
 backFromShop.addEventListener('click', (e) => {
     e.target.blur();
+    gameState = 'menu';
     shopScreen.classList.add('hidden');
     mainMenu.classList.remove('hidden');
 });
 
-// Handle Shop item clicks
-shopItems.forEach(el => {
-    const btn = el.querySelector('.buy-btn');
-    btn.addEventListener('click', (e) => {
+// Use event delegation for buy buttons since there are new sub-items
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('buy-btn')) {
         e.target.blur();
-        const itemType = el.getAttribute('data-item');
-        const price = parseInt(btn.getAttribute('data-price'));
+        const itemEl = e.target.closest('.shop-item');
+        const itemType = itemEl.getAttribute('data-item');
+        const price = parseInt(e.target.getAttribute('data-price'));
 
         if (!shopInventory[itemType]) {
-            // Try to buy
             if (coins >= price) {
                 coins -= price;
                 shopInventory[itemType] = true;
-                equippedItems[itemType] = true; // Auto-equip on buy
+                // Auto-equip if bought, unequip other arms if it's an arm model
+                if (itemType.startsWith('arms_')) {
+                    equippedItems.arms_m1 = false;
+                    equippedItems.arms_m2 = false;
+                    equippedItems.arms_m3 = false;
+                }
+                equippedItems[itemType] = true;
                 saveGameData();
                 updateShopUI();
                 if (audio) audio.playSound('pickup');
             } else {
                 // Not enough coins error
-                btn.classList.add('shake-error');
-                btn.innerText = 'THIẾU XU!';
+                e.target.parentElement.classList.add('shake-error');
+                e.target.innerText = 'THIẾU XU!';
                 setTimeout(() => {
-                    btn.classList.remove('shake-error');
+                    e.target.parentElement.classList.remove('shake-error');
                     updateShopUI();
                 }, 1000);
             }
         } else {
             // Toggle Equip
-            equippedItems[itemType] = !equippedItems[itemType];
+            if (!equippedItems[itemType]) {
+                if (itemType.startsWith('arms_')) {
+                    equippedItems.arms_m1 = false;
+                    equippedItems.arms_m2 = false;
+                    equippedItems.arms_m3 = false;
+                }
+                equippedItems[itemType] = true;
+            } else {
+                equippedItems[itemType] = false;
+            }
             saveGameData();
             updateShopUI();
             if (audio) audio.playSound('pickup');

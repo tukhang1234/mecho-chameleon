@@ -859,3 +859,62 @@ h1, h2, h3, .label {
 
  
  
+/* Mecha Arms Expandable */
+.expandable {
+    cursor: pointer;
+    border-bottom: 2px dashed rgba(255,255,255,0.2);
+}
+.expandable:hover {
+    background: rgba(255,255,255,0.05);
+}
+.shop-submenu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    width: 100%;
+}
+.shop-submenu .sub-item {
+    flex: 1 1 200px;
+    min-width: 250px;
+    transform: scale(0.95);
+}
+.shop-submenu .sub-item:hover {
+    transform: scale(1);
+}
+
+/* Auto Aim HUD */
+#auto-aim-container {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    z-index: 10;
+}
+#auto-aim-btn {
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    border-color: #ff003c;
+    color: #ff003c;
+    text-shadow: none;
+    box-shadow: none;
+    transition: all 0.3s;
+}
+#auto-aim-btn.active {
+    border-color: #39ff14;
+    color: #39ff14;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+.aim-hint {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+    margin-left: 5px;
+}

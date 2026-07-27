@@ -82,6 +82,12 @@
                 </div>
             </div>
 
+            <!-- Auto-Aim Toggle (Bottom Left) -->
+            <div id="auto-aim-container" class="hidden">
+                <button id="auto-aim-btn" class="neon-button small-btn active">AUTO-AIM: ON</button>
+                <div class="aim-hint">Nhấn SHIFT để bắn</div>
+            </div>
+
             <div id="upgrade-notification" class="hidden"></div>
         </div>
 
@@ -163,14 +169,45 @@
                     </div>
                 </div>
                 <!-- Item 2: Mecha Arms -->
-                <div class="shop-item" data-item="arms">
+                <div class="shop-item expandable" id="mecha-arms-category">
                     <div class="item-icon">🦾</div>
                     <div class="item-info">
-                        <h3>Mecha Arms</h3>
-                        <p>2 Cánh tay Robot trôi nổi trên lưng. Tự động đấm/bắn phụ bạn khi tấn công.</p>
+                        <h3>Mecha Arms (Models)</h3>
+                        <p>Bấm vào đây để chọn 3 mẫu Cánh tay Robot siêu ngầu.</p>
                     </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="12000">12000 🪙</button>
+                </div>
+                
+                <!-- Sub-items for Mecha Arms -->
+                <div id="mecha-arms-submenu" class="shop-submenu hidden">
+                    <div class="shop-item sub-item" data-item="arms_m1">
+                        <div class="item-icon">🥊</div>
+                        <div class="item-info">
+                            <h3>Model 1: Brawler</h3>
+                            <p>Tự động tung cú đấm trời giáng khi kẻ thù áp sát.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="5000">5000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item sub-item" data-item="arms_m2">
+                        <div class="item-icon">🔫🗡️</div>
+                        <div class="item-info">
+                            <h3>Model 2: Gun & Dagger</h3>
+                            <p>Tay trái cầm Dao găm, tay phải Súng năng lượng. (Hỗ trợ Manual Aim).</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="15000">15000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item sub-item" data-item="arms_m3">
+                        <div class="item-icon">🚀</div>
+                        <div class="item-info">
+                            <h3>Model 3: Heavy Gunner</h3>
+                            <p>2 Súng năng lượng ở cánh tay + 2 Súng lục ở bàn tay. Hỏa lực tối đa!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="30000">30000 🪙</button>
+                        </div>
                     </div>
                 </div>
                 <!-- Item 3: Plasma Core -->
