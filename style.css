@@ -920,3 +920,10 @@ h1, h2, h3, .label {
 }
 
 .hidden { display: none !important; }
+
+#shop-screen {
+    overflow-y: auto;
+    padding-top: 100px;
+    padding-bottom: 50px;
+    justify-content: flex-start;
+}
