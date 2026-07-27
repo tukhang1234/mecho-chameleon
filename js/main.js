@@ -1330,9 +1330,12 @@ function drawOpponent(ctx) {
     ctx.globalAlpha = alpha;
 
     // Robot Arms for Opponent
-    if (opponentState.equipped && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
+    if (opponentState.equipped && (stealthLevel || 0) < 0.8 && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
         opponentState.radius = radius; // Ensure radius is set for drawing
+        ctx.save();
+        ctx.translate(x, y);
         Player.prototype._drawRobotArms.call(opponentState, ctx, alpha, col);
+        ctx.restore();
     }
 
     // Outer glow ring

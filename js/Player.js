@@ -535,8 +535,11 @@ class Player {
         if (this.hasMissile) this._drawMissilePod(ctx, alpha);
         
         // Draw Robot Arms
-        if (this.equipped && (this.equipped.arms_m1 || this.equipped.arms_m2 || this.equipped.arms_m3) && this.stealthLevel < 0.8) {
+        if (this.equipped && (this.equipped.arms_m1 || this.equipped.arms_m2 || this.equipped.arms_m3 || this.equipped.arms_m4) && this.stealthLevel < 0.8) {
+            ctx.save();
+            ctx.translate(this.x, this.y);
             this._drawRobotArms(ctx, alpha, col);
+            ctx.restore();
         }
     }
 
@@ -747,10 +750,10 @@ class Player {
             // Supreme 4-Arms (M4) extra shoulders
             if (hasM4) {
                 // Draw 2 extra laser arms popping from the back
-                let xt1 = this.x + Math.cos(this.angle - Math.PI*0.8) * (this.radius + 2);
-                let yt1 = this.y + Math.sin(this.angle - Math.PI*0.8) * (this.radius + 2);
-                let xt2 = this.x + Math.cos(this.angle + Math.PI*0.8) * (this.radius + 2);
-                let yt2 = this.y + Math.sin(this.angle + Math.PI*0.8) * (this.radius + 2);
+                let xt1 = Math.cos(this.angle - Math.PI*0.8) * (this.radius + 2);
+                let yt1 = Math.sin(this.angle - Math.PI*0.8) * (this.radius + 2);
+                let xt2 = Math.cos(this.angle + Math.PI*0.8) * (this.radius + 2);
+                let yt2 = Math.sin(this.angle + Math.PI*0.8) * (this.radius + 2);
 
                 let a = this.armsAngle || this.angle;
                 let tx1 = xt1 + Math.cos(a - 0.2) * 15;
