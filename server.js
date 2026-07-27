@@ -133,6 +133,12 @@ io.on('connection', (socket) => {
         if (roomId) socket.to(roomId).emit('opponent_restart');
     });
 
+    // ── Relay: chat message ────────────────────────────────────────
+    socket.on('chat_message', (data) => {
+        const { roomId } = socket.data;
+        if (roomId) socket.to(roomId).emit('chat_message', data);
+    });
+
     // ── Disconnect ────────────────────────────────────────────────
     socket.on('disconnect', () => {
         // Remove from waiting queue if present
