@@ -78,12 +78,21 @@
             cursor: pointer;
             z-index: 1001;
             box-shadow: 0 0 10px rgba(57,255,20,0.5);
-            .shop-item.mythic { border: 2px solid #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.3); }
-        .shop-item.mythic:hover { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.8); }
-        .shop-item.mythic .item-name { color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        
+        /* Fixed CSS Nesting Issue & Mythic/Godly Styles */
+        .shop-item.mythic { border: 2px solid #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.3); }
+        .shop-item.mythic:hover { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.8); }
+        .shop-item.mythic .item-name { color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+
+        .shop-item.godly { border: 2px solid #00f3ff; box-shadow: 0 0 20px rgba(0,243,255,0.5); background: linear-gradient(135deg, rgba(0,243,255,0.1), rgba(0,0,0,0.9)); animation: godlyGlow 2s infinite alternate;}
+        .shop-item.godly:hover { border-color: #ffffff; box-shadow: 0 0 35px rgba(0,243,255,0.9); }
+        @keyframes godlyGlow {
+            0% { box-shadow: 0 0 10px rgba(0,243,255,0.4), inset 0 0 10px rgba(0,243,255,0.2); }
+            100% { box-shadow: 0 0 25px rgba(0,243,255,0.8), inset 0 0 20px rgba(0,243,255,0.5); }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
@@ -327,26 +336,26 @@
                         <button class="buy-btn" data-price="60000" style="border-color: #ffaa00; color: #ffaa00;">60000 🪙</button>
                     </div>
                 </div>
-                <!-- Item 5: Phantom Arms (Godly) -->
+                <!-- Item 5: Celestial Asura -->
                 <div class="shop-item mythic" data-item="arms_m5">
-                    <div class="item-icon">🌟</div>
+                    <div class="item-icon">✨</div>
                     <div class="item-info">
-                        <h3 style="color: #ffd700; text-shadow: 0 0 8px #ffd700;">Model 5 — Phantom Arms</h3>
-                        <p>[GODLY TIER] 6 Cánh tay ảo ảnh trôi nổi. Quét sạch kẻ thù bằng Kiếm Hư Không và Pháo Đa Sắc!</p>
+                        <h3 style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">Model 5 — Celestial Asura</h3>
+                        <p>6 Phantom Arms. Slashes nearby enemies & fires 3 Cosmic Lasers!</p>
                     </div>
                     <div class="item-action">
-                        <button class="buy-btn" data-price="150000" style="border-color: #ffd700; color: #ffd700;">150000 🪙</button>
+                        <button class="buy-btn" data-price="100000" style="border-color: #ffd700; color: #ffd700;">100000 🪙</button>
                     </div>
                 </div>
-                <!-- Item 6: Orbital Funnels (Godly) -->
-                <div class="shop-item mythic" data-item="arms_m6">
-                    <div class="item-icon">🛸</div>
+                <!-- Item 6: Galactic Seraph -->
+                <div class="shop-item godly" data-item="arms_m6">
+                    <div class="item-icon">🌌</div>
                     <div class="item-info">
-                        <h3 style="color: #00ffaa; text-shadow: 0 0 8px #00ffaa;">Model 6 — Orbital Funnels</h3>
-                        <p>[GODLY TIER] 4 Vệ tinh không gian. Tạo vòng bảo vệ chém nát kẻ thù và bắn Laser hủy diệt!</p>
+                        <h3 style="color: #ffffff; text-shadow: 0 0 15px #00f3ff;">Model 6 — Galactic Seraph</h3>
+                        <p>GODLY TIER. 8 Cyber-Wings. Passive Orbital Lightning & Giga Beam Shockwaves!</p>
                     </div>
                     <div class="item-action">
-                        <button class="buy-btn" data-price="300000" style="border-color: #00ffaa; color: #00ffaa;">300000 🪙</button>
+                        <button class="buy-btn" data-price="250000" style="border-color: #00f3ff; color: #00f3ff; font-size: 1.1rem; text-shadow: 0 0 5px #00f3ff;">250000 🪙</button>
                     </div>
                 </div>
             </div>
