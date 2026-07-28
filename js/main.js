@@ -1,47 +1,47 @@
 // --- main.js: Game Loop + Wave/Boss System + MULTIPLAYER (Co-op & PvP) ---
 
 const canvas = document.getElementById('gameCanvas');
-const ctx    = canvas.getContext('2d');
+const ctx = canvas.getContext('2d');
 
 // UI Elements
-const mainMenu       = document.getElementById('main-menu');
-const hud            = document.getElementById('hud');
+const mainMenu = document.getElementById('main-menu');
+const hud = document.getElementById('hud');
 const gameOverScreen = document.getElementById('game-over-screen');
-const playBtn        = document.getElementById('play-btn');
-const restartBtn     = document.getElementById('restart-btn');
-const scoreDisplay   = document.getElementById('scoreDisplay');
-const gearsDisplay   = document.getElementById('gearsDisplay');
-const healthBar      = document.getElementById('healthBar');
-const stealthBar     = document.getElementById('stealthCooldownBar');
-const waveDisplay    = document.getElementById('waveDisplay');
-const waveAnnounce   = document.getElementById('wave-announce');
-const finalScoreEl   = document.getElementById('finalScore');
-const finalGearsEl   = document.getElementById('finalGears');
-const finalWaveEl    = document.getElementById('finalWave');
+const playBtn = document.getElementById('play-btn');
+const restartBtn = document.getElementById('restart-btn');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const gearsDisplay = document.getElementById('gearsDisplay');
+const healthBar = document.getElementById('healthBar');
+const stealthBar = document.getElementById('stealthCooldownBar');
+const waveDisplay = document.getElementById('waveDisplay');
+const waveAnnounce = document.getElementById('wave-announce');
+const finalScoreEl = document.getElementById('finalScore');
+const finalGearsEl = document.getElementById('finalGears');
+const finalWaveEl = document.getElementById('finalWave');
 const menuFromGameOverBtn = document.getElementById('menu-from-gameover-btn');
 
 // Multiplayer UI elements
-const mpBtn          = document.getElementById('mp-btn');
-const modeSelectScr  = document.getElementById('mode-select');
-const lobbyScr       = document.getElementById('lobby-screen');
+const mpBtn = document.getElementById('mp-btn');
+const modeSelectScr = document.getElementById('mode-select');
+const lobbyScr = document.getElementById('lobby-screen');
 
 // Shop UI elements
-const shopBtn          = document.getElementById('shop-btn');
-const shopScreen       = document.getElementById('shop-screen');
-const backFromShop     = document.getElementById('back-from-shop');
+const shopBtn = document.getElementById('shop-btn');
+const shopScreen = document.getElementById('shop-screen');
+const backFromShop = document.getElementById('back-from-shop');
 const menuCoinsDisplay = document.getElementById('menuCoinsDisplay');
 const shopCoinsDisplay = document.getElementById('shopCoinsDisplay');
-const shopItems        = document.querySelectorAll('.shop-item');
-const victoryScr     = document.getElementById('victory-screen');
-const coopBtn        = document.getElementById('coop-btn');
-const pvpBtn         = document.getElementById('pvp-btn');
-const backFromMode   = document.getElementById('back-from-mode');
+const shopItems = document.querySelectorAll('.shop-item');
+const victoryScr = document.getElementById('victory-screen');
+const coopBtn = document.getElementById('coop-btn');
+const pvpBtn = document.getElementById('pvp-btn');
+const backFromMode = document.getElementById('back-from-mode');
 const cancelLobbyBtn = document.getElementById('cancel-lobby-btn');
-const lobbyStatus    = document.getElementById('lobby-status');
+const lobbyStatus = document.getElementById('lobby-status');
 const lobbyModeLabel = document.getElementById('lobby-mode-label');
-const p1Label        = document.getElementById('p1-label');
+const p1Label = document.getElementById('p1-label');
 const oppHPContainer = document.getElementById('opp-hp-container');
-const oppHealthBar   = document.getElementById('oppHealthBar');
+const oppHealthBar = document.getElementById('oppHealthBar');
 const victoryScoreEl = document.getElementById('victoryScore');
 const victoryGearsEl = document.getElementById('victoryGears');
 const victoryRestartBtn = document.getElementById('victory-restart-btn');
@@ -53,21 +53,21 @@ let animId;
 
 // Entities
 let player, particles, screenShake, audio;
-let enemies      = [];
+let enemies = [];
 let collectibles = [];
-let powerups     = [];
+let powerups = [];
 
 // Input
-const keys  = {};
+const keys = {};
 const mouse = { x: 0, y: 0, down: false };
 let autoAimEnabled = true;
 
 // Game Data
 let score = 0, gears = 0, playerHealth = 100, maxPlayerHealth = 100;
-let waveNumber   = 0;
-let waveActive   = false;
-let waveTimer    = 0;
-let enemiesLeft  = 0;
+let waveNumber = 0;
+let waveActive = false;
+let waveTimer = 0;
+let enemiesLeft = 0;
 
 // Shop / Persistence
 let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
@@ -76,8 +76,8 @@ localStorage.setItem('chameleon_coins', coins.toString());
 let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
 let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
 
-let bossAlive    = false;
-let boss         = null;
+let bossAlive = false;
+let boss = null;
 let waveInterval = null;
 
 // Perf
@@ -87,17 +87,17 @@ const MAX_PARTICLES = 80;
 // ==========================
 // MULTIPLAYER STATE
 // ==========================
-let socket        = null;
-let mpMode        = null;   // null | 'coop' | 'pvp'
-let playerIndex   = 0;      // 1 = Host, 2 = Client
+let socket = null;
+let mpMode = null;   // null | 'coop' | 'pvp'
+let playerIndex = 0;      // 1 = Host, 2 = Client
 let opponentState = null;   // Latest state received from opponent
 let remoteEnemies = [];     // Enemy positions synced from host (coop client)
 let enemyNetIdCounter = 0;  // Unique IDs for enemies (for co-op hit relay)
-let syncFrame     = 0;      // Frame counter for enemy sync throttle
+let syncFrame = 0;      // Frame counter for enemy sync throttle
 
 // PvP state
 let pvpOpponentHealth = 100;
-let tongueHitOpp  = false;  // Prevent tongue from hitting opponent multiple times per swing
+let tongueHitOpp = false;  // Prevent tongue from hitting opponent multiple times per swing
 
 // Co-op client hit tracking
 let clientTongueHitIds = new Set(); // track which enemy IDs tongue hit this swing
@@ -106,7 +106,7 @@ let clientTongueHitIds = new Set(); // track which enemy IDs tongue hit this swi
 // SETUP
 // ==========================
 function resize() {
-    canvas.width  = window.innerWidth;
+    canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     buildStars();
 }
@@ -131,9 +131,9 @@ window.addEventListener('keydown', e => {
     const focused = document.activeElement;
     if (focused && focused.id === 'chat-input') {
         if (e.key === 'Escape') focused.blur();
-        return; // Cho phÃÆÃÂ©p gÃÆÃÂµ chÃÂ¡ÃÂ»ÃÂ¯ bÃÆÃÂ¬nh thÃâ ÃÂ°ÃÂ¡ÃÂ»ÃÂng
+        return; // Allow normal typing in chat
     }
-    
+
     // If a game UI button is focused while playing, forcefully blur it
     // This prevents Space/Enter from triggering hidden menu screens
     if (gameState === 'playing') {
@@ -144,7 +144,7 @@ window.addEventListener('keydown', e => {
         if (e.key === ' ' || e.key === 'Enter') e.preventDefault();
     }
     keys[e.key] = true;
-    
+
     // Toggle Stats Panel
     if (e.key.toLowerCase() === 'c') {
         const statsPanel = document.getElementById('stats-panel');
@@ -155,17 +155,15 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-window.addEventListener('mousedown', e => { 
-    if (e.button === 0) mouse.down = true; 
-    if (e.button === 2) mouse.rightDown = true; 
+window.addEventListener('mousedown', e => {
+    if (e.button === 0) mouse.down = true;
+    if (e.button === 2) mouse.rightDown = true;
 });
-window.addEventListener('mouseup',   e => { 
-    if (e.button === 0) mouse.down = false; 
-    if (e.button === 2) mouse.rightDown = false; 
+window.addEventListener('mouseup', e => {
+    if (e.button === 0) mouse.down = false;
+    if (e.button === 2) mouse.rightDown = false;
 });
-window.addEventListener('contextmenu', e => {
-    if (e.target.tagName !== 'INPUT') e.preventDefault();
-});
+
 
 // ==========================
 // MENU BACKGROUND
@@ -198,11 +196,11 @@ function updateShopUI() {
             if (equippedItems[itemType]) {
                 el.classList.add('equipped');
                 btn.className = 'buy-btn equipped-btn';
-                btn.innerText = 'ĐÃ TRANG BỊ';
+                btn.innerText = 'EQUIPPED';
             } else {
                 el.classList.remove('equipped');
                 btn.className = 'buy-btn equip-btn';
-                btn.innerText = 'TRANG BỊ';
+                btn.innerText = 'EQUIP';
             }
         } else {
             el.classList.remove('equipped');
@@ -219,11 +217,11 @@ menuBg();
 // ==========================
 function initGame() {
     if (waveInterval) clearInterval(waveInterval);
-    player      = new Player(canvas.width / 2, canvas.height / 2);
+    player = new Player(canvas.width / 2, canvas.height / 2);
     player.equipped = equippedItems;
     player.invulnTimer = 0;
-    enemies     = []; collectibles = []; powerups = [];
-    particles   = new ParticleSystem();
+    enemies = []; collectibles = []; powerups = [];
+    particles = new ParticleSystem();
     screenShake = new ScreenShake();
     if (!audio) audio = new AudioSystem();
 
@@ -242,7 +240,7 @@ function initGame() {
     modeSelectScr.classList.add('hidden');
     lobbyScr.classList.add('hidden');
     hud.classList.remove('hidden');
-    
+
     // Auto Aim HUD logic
     const autoAimContainer = document.getElementById('auto-aim-container');
     if (autoAimContainer) {
@@ -256,7 +254,7 @@ function initGame() {
     // Multiplayer HUD elements
     if (mpMode) {
         p1Label.classList.remove('hidden');
-        p1Label.innerText = playerIndex === 1 ? 'ÃÂ°ÃÂ¸Ã¢â¬ËÃÂ¤ P1 ÃÂ¢Ã¢âÂ¬Ã¢â¬Â YOU (HOST)' : 'ÃÂ°ÃÂ¸Ã¢â¬ËÃÂ¤ P2 ÃÂ¢Ã¢âÂ¬Ã¢â¬Â YOU';
+        p1Label.innerText = playerIndex === 1 ? '👤 P1 — YOU (HOST)' : '👤 P2 — YOU';
         document.getElementById('chat-toggle-btn').classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
@@ -275,7 +273,7 @@ function initGame() {
     audio.stopMusic();
     audio.startGameMusic();
 
-    // PvP: no enemies, no waves ÃÂ¢Ã¢âÂ¬Ã¢â¬Â just players vs each other
+    // PvP: no enemies, no waves — just players vs each other
     if (mpMode === 'pvp') {
         spawnGear(); spawnGear(); spawnGear();
         // Periodically drop power-ups for PvP
@@ -310,13 +308,13 @@ function startNextWave() {
 
     waveNumber++;
     const isBossWave = waveNumber % 10 === 0;
-    const bossType   = Math.ceil(waveNumber / 10);
-    const count      = isBossWave ? 0 : Math.min(6 + waveNumber * 2, 40);
-    enemiesLeft      = isBossWave ? 1 : count;
-    waveActive       = true;
+    const bossType = Math.ceil(waveNumber / 10);
+    const count = isBossWave ? 0 : Math.min(6 + waveNumber * 2, 40);
+    enemiesLeft = isBossWave ? 1 : count;
+    waveActive = true;
 
     showWaveAnnounce(isBossWave
-        ? `ÃÂ¢ÃÂ¡ÃÂ  WAVE ${waveNumber} ÃÂ¢Ã¢âÂ¬Ã¢â¬Â BOSS INCOMING!`
+        ? `⚠️ WAVE ${waveNumber} — BOSS INCOMING!`
         : `WAVE ${waveNumber}`
     );
 
@@ -334,7 +332,7 @@ function spawnWaveEnemies(count, wave) {
     if (waveInterval) clearInterval(waveInterval);
     waveInterval = setInterval(() => {
         if (gameState !== 'playing') { clearInterval(waveInterval); return; }
-        if (spawned >= count)        { clearInterval(waveInterval); return; }
+        if (spawned >= count) { clearInterval(waveInterval); return; }
         spawnEnemy(wave);
         spawned++;
     }, Math.max(200, 800 - wave * 20));
@@ -343,10 +341,10 @@ function spawnWaveEnemies(count, wave) {
 function spawnEnemy(wave) {
     const side = Math.random() * 4 | 0;
     let x, y;
-    if      (side === 0) { x = Math.random() * canvas.width;  y = -40; }
-    else if (side === 1) { x = canvas.width + 40;              y = Math.random() * canvas.height; }
-    else if (side === 2) { x = Math.random() * canvas.width;  y = canvas.height + 40; }
-    else                 { x = -40;                            y = Math.random() * canvas.height; }
+    if (side === 0) { x = Math.random() * canvas.width; y = -40; }
+    else if (side === 1) { x = canvas.width + 40; y = Math.random() * canvas.height; }
+    else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + 40; }
+    else { x = -40; y = Math.random() * canvas.height; }
     const spd = 1.5 + wave * 0.08 + Math.random() * 1.2;
     const e = new Enemy(x, y, spd);
     e.netId = ++enemyNetIdCounter;
@@ -355,9 +353,9 @@ function spawnEnemy(wave) {
 
 function spawnBoss(bossType) {
     if (gameState !== 'playing') return;
-    const bx = canvas.width  / 2;
+    const bx = canvas.width / 2;
     const by = -80;
-    boss      = new Boss(bx, by, ((bossType - 1) % 5) + 1);
+    boss = new Boss(bx, by, ((bossType - 1) % 5) + 1);
     boss.netId = ++enemyNetIdCounter;
     bossAlive = true;
     enemies.push(boss);
@@ -368,8 +366,8 @@ function checkWaveEnd() {
     if (!waveActive) return;
     if (mpMode === 'coop' && playerIndex === 2) return;
     if (enemies.length === 0 && !bossAlive) {
-        waveActive  = false;
-        waveTimer   = 120;
+        waveActive = false;
+        waveTimer = 120;
     }
 }
 
@@ -384,20 +382,20 @@ function showWaveAnnounce(text) {
 
 function spawnGear() {
     if (collectibles.length >= 8) return;
-    const x = 60 + Math.random() * (canvas.width  - 120);
+    const x = 60 + Math.random() * (canvas.width - 120);
     const y = 60 + Math.random() * (canvas.height - 120);
     collectibles.push(new Gear(x, y));
 }
 
 function spawnUpgrade() {
-    const x = canvas.width  / 2 + (Math.random() - 0.5) * 200;
+    const x = canvas.width / 2 + (Math.random() - 0.5) * 200;
     const y = canvas.height / 2 + (Math.random() - 0.5) * 200;
     powerups.push(new PowerUp(x, y));
 }
 
 function showUpgradeText(text) {
     const notif = document.getElementById('upgrade-notification');
-    notif.innerText = 'ÃÂ¢ÃÂ¡Ã¢âÂ¢ ' + text;
+    notif.innerText = '💎 ' + text;
     notif.classList.remove('hidden');
     const fresh = notif.cloneNode(true);
     notif.parentNode.replaceChild(fresh, notif);
@@ -414,9 +412,9 @@ function updateHUD() {
 
     healthBar.style.width = Math.max(0, (playerHealth / maxPlayerHealth) * 100) + '%';
     const hpPct = playerHealth / maxPlayerHealth;
-    if      (hpPct < 0.3) healthBar.style.background = '#ff003c';
+    if (hpPct < 0.3) healthBar.style.background = '#ff003c';
     else if (hpPct < 0.6) healthBar.style.background = '#ff8800';
-    else                  healthBar.style.background = '#00f3ff';
+    else healthBar.style.background = '#00f3ff';
 
     if (player.stealthCooldown <= 0) {
         stealthBar.innerText = 'READY';
@@ -426,7 +424,7 @@ function updateHUD() {
         stealthBar.innerText = pct + '%';
         stealthBar.classList.remove('ready');
     }
-    
+
     // Update Stats Panel
     const statHp = document.getElementById('stat-hp');
     const statDmg = document.getElementById('stat-dmg');
@@ -434,7 +432,7 @@ function updateHUD() {
     const statCd = document.getElementById('stat-cd');
     const statStealth = document.getElementById('stat-stealth');
     if (statHp) statHp.innerText = `${Math.floor(playerHealth)}/${maxPlayerHealth}`;
-    if (statDmg) statDmg.innerText = `${player.finalDamage ? (player.finalDamage/10).toFixed(1) : 1.0}x`;
+    if (statDmg) statDmg.innerText = `${player.finalDamage ? (player.finalDamage / 10).toFixed(1) : 1.0}x`;
     if (statSpd) statSpd.innerText = `${player.speed.toFixed(1)}`;
     if (statCd) statCd.innerText = `${player.armsCooldown || 0} f`;
     if (statStealth) statStealth.innerText = `${Math.floor(player.stealthLevel * 100)}%`;
@@ -491,7 +489,7 @@ function checkCollisions() {
         if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
             if (p.isHealthPill) {
                 playerHealth = Math.min(maxPlayerHealth, playerHealth + 40);
-                showUpgradeText('+40 HP HÃÂ¡ÃÂ»Ã¢â¬â¢I PHÃÂ¡ÃÂ»ÃÂ¤C!');
+                showUpgradeText('+40 HP RESTORED!');
                 if (audio) audio.playSound('pickup');
             } else {
                 player.applyBuff(p.buffType);
@@ -506,7 +504,7 @@ function checkCollisions() {
         }
     }
 
-    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ PvP: tongue/bullet/laser vs OPPONENT ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+    // ⚔️⚔️⚔️ PvP: tongue/bullet/laser vs OPPONENT ⚔️⚔️⚔️
     if (mpMode === 'pvp' && opponentState && socket) {
         const oppR = 18;
 
@@ -537,8 +535,8 @@ function checkCollisions() {
         // Laser vs opponent
         for (const laser of player.lasers) {
             if (laser.life === laser.maxLife - 1) {
-                const ldx  = opponentState.x - laser.x;
-                const ldy  = opponentState.y - laser.y;
+                const ldx = opponentState.x - laser.x;
+                const ldy = opponentState.y - laser.y;
                 const proj = ldx * Math.cos(laser.angle) + ldy * Math.sin(laser.angle);
                 const perp = Math.abs(-ldx * Math.sin(laser.angle) + ldy * Math.cos(laser.angle));
                 if (proj > 0 && proj < laser.length && perp < oppR + 10) {
@@ -548,13 +546,13 @@ function checkCollisions() {
         }
     }
 
-    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Co-op CLIENT: hit remote enemies ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+    // 🤝🤝🤝 Co-op CLIENT: hit remote enemies 🤝🤝🤝
     if (mpMode === 'coop' && playerIndex === 2 && socket) {
         checkCoopClientCollisions(tip);
         return; // skip normal enemy collisions (client has no local enemies)
     }
 
-    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Normal (single-player OR co-op HOST): enemies ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+    // 🧟‍♂️🧟‍♂️🧟‍♂️ Normal (single-player OR co-op HOST): enemies 🧟‍♂️🧟‍♂️🧟‍♂️
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
 
@@ -587,8 +585,8 @@ function checkCollisions() {
         if (!e.dead && player.lasers.length > 0) {
             for (const laser of player.lasers) {
                 if (laser.life === laser.maxLife - 1) {
-                    const dx   = e.x - laser.x;
-                    const dy   = e.y - laser.y;
+                    const dx = e.x - laser.x;
+                    const dy = e.y - laser.y;
                     const proj = dx * Math.cos(laser.angle) + dy * Math.sin(laser.angle);
                     const perp = Math.abs(-dx * Math.sin(laser.angle) + dy * Math.cos(laser.angle));
                     if (proj > 0 && proj < laser.length && perp < e.radius + 10) {
@@ -621,7 +619,7 @@ function checkCollisions() {
             if (dmgMult > 0) {
                 hitPlayer(e.damage * dmgMult);
                 const dx = player.x - e.x, dy = player.y - e.y;
-                const d  = Math.hypot(dx, dy) || 1;
+                const d = Math.hypot(dx, dy) || 1;
                 player.x += (dx / d) * e.knockback;
                 player.y += (dy / d) * e.knockback;
             }
@@ -665,8 +663,8 @@ function checkCoopClientCollisions(tip) {
         // Lasers vs remote enemy
         for (const laser of player.lasers) {
             if (laser.life === laser.maxLife - 1) {
-                const dx   = re.x - laser.x;
-                const dy   = re.y - laser.y;
+                const dx = re.x - laser.x;
+                const dy = re.y - laser.y;
                 const proj = dx * Math.cos(laser.angle) + dy * Math.sin(laser.angle);
                 const perp = Math.abs(-dx * Math.sin(laser.angle) + dy * Math.cos(laser.angle));
                 if (proj > 0 && proj < laser.length && perp < re.radius + 10) {
@@ -707,9 +705,9 @@ function onEnemyDeath(e, idx) {
         }
         const newR = e.radius === 36 ? 24 : 12;
         for (let s = 0; s < 2; s++) {
-            const a   = Math.random() * Math.PI * 2;
-            const ne  = new Enemy(e.x + Math.cos(a) * newR, e.y + Math.sin(a) * newR, 1.5 + Math.random() * 1.5, 'seeker', newR);
-            ne.netId  = ++enemyNetIdCounter;
+            const a = Math.random() * Math.PI * 2;
+            const ne = new Enemy(e.x + Math.cos(a) * newR, e.y + Math.sin(a) * newR, 1.5 + Math.random() * 1.5, 'seeker', newR);
+            ne.netId = ++enemyNetIdCounter;
             ne.vx = Math.cos(a) * 3; ne.vy = Math.sin(a) * 3;
             enemies.push(ne);
         }
@@ -717,7 +715,7 @@ function onEnemyDeath(e, idx) {
 
     if (e.isBoss) {
         bossAlive = false;
-        boss      = null;
+        boss = null;
         spawnUpgrade();
         spawnUpgrade();
         audio.stopMusic();
@@ -732,9 +730,9 @@ function onEnemyDeath(e, idx) {
 }
 
 function handleGearUpgrade() {
-    if      (gears % 5  === 0) { player.tongueRange += 20; showUpgradeText('TONGUE RANGE +20!'); }
+    if (gears % 5 === 0) { player.tongueRange += 20; showUpgradeText('TONGUE RANGE +20!'); }
     else if (gears % 12 === 0) { player.maxStealthCooldown = Math.max(80, player.maxStealthCooldown - 25); showUpgradeText('STEALTH CD REDUCED!'); }
-    else if (gears % 8  === 0) { player.speed = Math.min(7.5, player.speed + 0.25); showUpgradeText('SPEED +0.25!'); }
+    else if (gears % 8 === 0) { player.speed = Math.min(7.5, player.speed + 0.25); showUpgradeText('SPEED +0.25!'); }
 }
 
 // ==========================
@@ -749,10 +747,10 @@ function drawBg(t) {
     ctx.strokeStyle = 'rgba(0,180,255,0.045)';
     ctx.lineWidth = 1;
     for (let x = t * 18 % gs; x < W + gs; x += gs) {
-        ctx.beginPath(); ctx.moveTo(x|0, 0); ctx.lineTo(x|0, H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x | 0, 0); ctx.lineTo(x | 0, H); ctx.stroke();
     }
     for (let y = t * 18 % gs; y < H + gs; y += gs) {
-        ctx.beginPath(); ctx.moveTo(0, y|0); ctx.lineTo(W, y|0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, y | 0); ctx.lineTo(W, y | 0); ctx.stroke();
     }
 
     ctx.shadowBlur = 0;
@@ -822,7 +820,7 @@ function update() {
     updateDamageNumbers();
     updateHUD();
 
-    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Multiplayer: send state & sync ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+    // 📡 Multiplayer: send state & sync 
     if (mpMode && socket) {
         sendPlayerState();
         if (mpMode === 'coop' && playerIndex === 1) sendEnemySync();
@@ -868,7 +866,7 @@ function draw() {
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ff003c';
             ctx.shadowBlur = 8; ctx.shadowColor = '#ff003c';
-            ctx.fillText('ÃÂ¢ÃÂ¡ÃÂ  BOSS WAVE ÃÂ¢ÃÂ¡ÃÂ ', canvas.width / 2, 50);
+            ctx.fillText('⚠️ BOSS WAVE ⚠️', canvas.width / 2, 50);
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
         }
@@ -929,7 +927,7 @@ function showVictory() {
     victoryScr.classList.remove('hidden');
     victoryScoreEl.innerText = Math.floor(score);
     victoryGearsEl.innerText = gears;
-    
+
     const earned = Math.floor(score / 50) + gears * 10 + 500; // Bonus for victory
     coins += earned;
     saveGameData();
@@ -946,7 +944,7 @@ playBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     mpMode = null; playerIndex = 0; opponentState = null;
     if (!audio) audio = new AudioSystem();
-    showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
+    showLoadingScreen('LOADING MATCH...', 1000, () => {
         initGame();
     });
 });
@@ -971,9 +969,9 @@ if (autoAimBtn) {
 // ==========================
 // SHOP LOGIC
 // ==========================
-const mechaArmsCat   = document.getElementById('mecha-arms-category');
+const mechaArmsCat = document.getElementById('mecha-arms-category');
 const mechaArmsPanel = document.getElementById('mecha-arms-panel');
-const backFromArms   = document.getElementById('back-from-arms');
+const backFromArms = document.getElementById('back-from-arms');
 const armsCoinsDisplay = document.getElementById('armsCoinsDisplay');
 
 if (mechaArmsCat) {
@@ -1036,7 +1034,7 @@ document.addEventListener('click', (e) => {
             } else {
                 // Not enough coins error
                 e.target.parentElement.classList.add('shake-error');
-                e.target.innerText = 'THIÃÂ¡ÃÂºÃÂ¾U XU!';
+                e.target.innerText = 'NOT ENOUGH COINS!';
                 setTimeout(() => {
                     e.target.parentElement.classList.remove('shake-error');
                     updateShopUI();
@@ -1067,11 +1065,11 @@ restartBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     if (mpMode && socket) {
         socket.emit('request_restart');
-        e.target.innerText = 'ChÃ¡Â»Â ÃâÃ¡Â»âi thÃ¡Â»Â§ (1/2)...';
+        e.target.innerText = 'Waiting for opponent (1/2)...';
     } else {
         gameOverScreen.classList.add('hidden');
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I LÃ¡ÂºÂ I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
+        showLoadingScreen('RELOADING MATCH...', 1000, () => {
             initGame();
         });
     }
@@ -1088,7 +1086,7 @@ if (exitGameBtn) {
     exitGameBtn.addEventListener('click', (e) => {
         e.target.blur();
         if (gameState === 'playing') {
-            endGame(); // HoÃÂ¡ÃÂºÃÂ·c xÃÂ¡ÃÂ»ÃÂ­ lÃÆÃÂ½ thoÃÆÃÂ¡t nhanh
+            endGame();
             document.getElementById('stats-panel').classList.add('hidden');
             if (socket) socket.emit('player_died');
         }
@@ -1108,11 +1106,11 @@ victoryRestartBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     if (mpMode && socket) {
         socket.emit('request_restart');
-        e.target.innerText = 'ChÃ¡Â»Â ÃâÃ¡Â»âi thÃ¡Â»Â§ (1/2)...';
+        e.target.innerText = 'Waiting for opponent (1/2)...';
     } else {
         victoryScr.classList.add('hidden');
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I LÃ¡ÂºÂ I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
+        showLoadingScreen('RELOADING MATCH...', 1000, () => {
             initGame();
         });
     }
@@ -1129,12 +1127,12 @@ document.addEventListener('click', (e) => {
     if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
         document.activeElement.blur();
     }
-    
+
     if (!audio) audio = new AudioSystem();
     if (gameState === 'menu') audio.startMenuMusic();
 });
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Multiplayer buttons ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// Multiplayer buttons 
 mpBtn.addEventListener('click', (e) => {
     if (e) e.target.blur();
     if (!audio) audio = new AudioSystem();
@@ -1168,12 +1166,11 @@ cancelLobbyBtn.addEventListener('click', (e) => {
 });
 
 
-
 // ==========================
 // MULTIPLAYER FUNCTIONS
 // ==========================
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Connect to server and find a match ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// Connect to server and find a match 
 function findMatch(mode) {
     if (!socket) {
         socket = io();
@@ -1186,12 +1183,12 @@ function findMatch(mode) {
 
 function setupSocketListeners() {
     socket.on('waiting', () => {
-        lobbyStatus.innerText = 'ÃÂ¢ÃÂÃÂ³ ÃâÃÂang chÃÂ¡ÃÂ»ÃÂ ngÃâ ÃÂ°ÃÂ¡ÃÂ»ÃÂi chÃâ ÃÂ¡i thÃÂ¡ÃÂ»ÃÂ© 2...';
+        lobbyStatus.innerText = '⏳ Waiting for Player 2...';
     });
 
     socket.on('chatMessage', (text) => {
         if (typeof appendChatMessage === 'function') {
-            appendChatMessage("ÃâÃÂÃÂ¡ÃÂ»Ã¢â¬Ång ÃâÃ¢â¬ËÃÂ¡ÃÂ»Ã¢âÂ¢i", text, "other");
+            appendChatMessage("Teammate", text, "other");
         }
     });
 
@@ -1202,14 +1199,14 @@ function setupSocketListeners() {
         pvpOpponentHealth = 100;
         tongueHitOpp = false;
 
-        const modeLabel = mode === 'coop' ? 'ÃÂ°ÃÂ¸ÃÂ¤ÃÂ CO-OP' : 'ÃÂ¢ÃÂ¡Ã¢â¬Â PvP';
+        const modeLabel = mode === 'coop' ? '🤝 CO-OP' : '⚔️ PvP';
         const roleLabel = idx === 1 ? 'HOST (P1)' : 'CLIENT (P2)';
-        lobbyStatus.innerText = `ÃÂ¢ÃâÃ¢â¬Â¦ ÃâÃÂÃÆÃÂ£ ghÃÆÃÂ©p ${modeLabel}! BÃÂ¡ÃÂºÃÂ¡n lÃÆÃÂ  ${roleLabel}. ÃâÃÂang bÃÂ¡ÃÂºÃÂ¯t ÃâÃ¢â¬ËÃÂ¡ÃÂºÃÂ§u...`;
+        lobbyStatus.innerText = `✅ Match found: ${modeLabel}! You are ${roleLabel}. Starting...`;
 
         setTimeout(() => {
             lobbyScr.classList.add('hidden');
             if (!audio) audio = new AudioSystem();
-            showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1500, () => {
+            showLoadingScreen('LOADING MATCH...', 1500, () => {
                 initGame();
                 if (mpMode === 'pvp') {
                     if (playerIndex === 1) player.x = 200;
@@ -1226,16 +1223,16 @@ function setupSocketListeners() {
 
     socket.on('restart_vote_status', (data) => {
         const btn = gameOverScreen.classList.contains('hidden') ? victoryRestartBtn : restartBtn;
-        if (btn) btn.innerText = `ChÃ¡Â»Â ÃâÃ¡Â»âi thÃ¡Â»Â§ (${data.votes}/2)...`;
+        if (btn) btn.innerText = `Waiting for opponent (${data.votes}/2)...`;
     });
 
     socket.on('restart_game', () => {
         gameOverScreen.classList.add('hidden');
         victoryScr.classList.add('hidden');
-        if (restartBtn) restartBtn.innerText = 'CHÃÂ I LÃ¡ÂºÂ I';
-        if (victoryRestartBtn) victoryRestartBtn.innerText = 'CHÃÂ I LÃ¡ÂºÂ I';
+        if (restartBtn) restartBtn.innerText = 'PLAY AGAIN';
+        if (victoryRestartBtn) victoryRestartBtn.innerText = 'PLAY AGAIN';
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I LÃ¡ÂºÂ I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
+        showLoadingScreen('RELOADING MATCH...', 1000, () => {
             initGame();
             if (mpMode === 'pvp') {
                 if (playerIndex === 1) player.x = 200;
@@ -1268,7 +1265,7 @@ function setupSocketListeners() {
         if (data.waveAnnounce) showWaveAnnounce(data.waveAnnounce);
     });
 
-    // Co-op HOST: client hit an enemy ÃÂ¢Ã¢âÂ¬Ã¢â¬Â apply damage
+    // Co-op HOST: client hit an enemy — apply damage
     socket.on('client_hit', ({ netId, damage }) => {
         if (mpMode !== 'coop' || playerIndex !== 1) return;
         const e = enemies.find(en => en.netId === netId);
@@ -1291,7 +1288,7 @@ function setupSocketListeners() {
         if (screenShake) screenShake.trigger(5, 8);
     });
 
-    // PvP: opponent died ÃÂ¢Ã¢âÂ¬Ã¢â¬Â this player wins!
+    // PvP: opponent died — this player wins!
     socket.on('opponent_died', () => {
         if (mpMode === 'pvp' && gameState === 'playing') {
             showVictory();
@@ -1301,7 +1298,7 @@ function setupSocketListeners() {
     socket.on('opponent_disconnected', () => {
         if (gameState === 'playing') {
             opponentState = null;
-            showWaveAnnounce('ÃÂ¢ÃÂ¡ÃÂ  ÃâÃÂÃÂ¡ÃÂ»Ã¢â¬Ëi thÃÂ¡ÃÂ»ÃÂ§ ngÃÂ¡ÃÂºÃÂ¯t kÃÂ¡ÃÂºÃÂ¿t nÃÂ¡ÃÂ»Ã¢â¬Ëi!');
+            showWaveAnnounce('⚠️ Opponent disconnected!');
             setTimeout(() => {
                 if (gameState === 'playing') endGame();
             }, 2500);
@@ -1310,98 +1307,92 @@ function setupSocketListeners() {
 
     socket.on('disconnect', () => {
         if (gameState === 'playing') {
-            showWaveAnnounce('ÃÂ¢ÃÂ¡ÃÂ  MÃÂ¡ÃÂºÃÂ¥t kÃÂ¡ÃÂºÃÂ¿t nÃÂ¡ÃÂ»Ã¢â¬Ëi server!');
+            showWaveAnnounce('⚠️ Lost connection to server!');
         }
     });
 }
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Send this player's state to server ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// Send this player's state to server 
 function sendPlayerState() {
     if (!socket || !socket.connected || gameState !== 'playing') return;
     socket.emit('player_state', {
-        x:             player.x,
-        y:             player.y,
-        angle:         player.angle,
-        stealthLevel:  player.stealthLevel,
-        tongueState:   player.tongueState,
-        tongueProgress:player.tongueProgress,
+        x: player.x,
+        y: player.y,
+        angle: player.angle,
+        stealthLevel: player.stealthLevel,
+        tongueState: player.tongueState,
+        tongueProgress: player.tongueProgress,
         tongueTargetX: player.tongueTargetX,
         tongueTargetY: player.tongueTargetY,
-        hasGun:        player.hasGun,
-        hasLaser:      player.hasLaser,
-        hasMissile:    player.hasMissile,
-        buffCount:     player.buffCount,
+        hasGun: player.hasGun,
+        hasLaser: player.hasLaser,
+        hasMissile: player.hasMissile,
+        buffCount: player.buffCount,
         damageMultiplier: player.damageMultiplier,
-        bullets:       player.bullets.map(b => ({ x: b.x, y: b.y, color: b.color, radius: b.radius })),
-        lasers:        player.lasers ? player.lasers.map(l => ({ x: l.x, y: l.y, angle: l.angle, color: l.color, alpha: l.alpha })) : [],
-        health:        playerHealth,
-        equipped:      player.equipped,
+        bullets: player.bullets.map(b => ({ x: b.x, y: b.y, color: b.color, radius: b.radius })),
+        lasers: player.lasers ? player.lasers.map(l => ({ x: l.x, y: l.y, angle: l.angle, color: l.color, alpha: l.alpha })) : [],
+        health: playerHealth,
+        equipped: player.equipped,
         armsPunchAnimL: player.armsPunchAnimL,
         armsPunchAnimR: player.armsPunchAnimR,
-        armsAngle:     player.armsAngle
+        armsAngle: player.armsAngle
     });
 }
 
-// ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ Co-op HOST: send enemy positions to client (~20fps) ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬
+// Co-op HOST: send enemy positions to client (~20fps) 
 function sendEnemySync() {
     if (!socket || !socket.connected) return;
     syncFrame++;
     if (syncFrame % 3 !== 0) return; // ~20fps
 
-    let announceText = null;
-    // Track previous wave for announce
-    if (syncFrame % 60 === 0 && waveActive) {
-        // Periodically remind client of wave (in case they missed it)
-    }
-
     socket.emit('enemy_sync', {
         enemies: enemies.map(e => ({
-            netId:    e.netId,
-            x:        e.x,
-            y:        e.y,
-            hp:       e.hp,
-            maxHp:    e.maxHp,
-            dead:     e.dead,
-            radius:   e.radius,
-            angle:    e.angle,
+            netId: e.netId,
+            x: e.x,
+            y: e.y,
+            hp: e.hp,
+            maxHp: e.maxHp,
+            dead: e.dead,
+            radius: e.radius,
+            angle: e.angle,
             hitFlash: e.hitFlash,
-            isBoss:   !!e.isBoss,
+            isBoss: !!e.isBoss,
             bossType: e.bossType,
-            color:    e.color,
-            damage:   e.damage,
-            phase:    e.phase,
-            pulse:    e.pulse,
+            color: e.color,
+            damage: e.damage,
+            phase: e.phase,
+            pulse: e.pulse,
             shieldAngle: e.shieldAngle,
             // Boss projectiles
             projectiles: e.isBoss ? (e.projectiles || []).map(p => ({
                 x: p.x, y: p.y, color: p.color, radius: p.radius
             })) : undefined,
         })),
-        waveNumber:   waveNumber,
+        waveNumber: waveNumber,
     });
 }
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Lobby UI helpers ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// Lobby UI helpers 
 function showLobbyScreen(mode) {
     lobbyScr.classList.remove('hidden');
     const tag = lobbyModeLabel;
     if (mode === 'coop') {
-        tag.innerText = 'ÃÂ°ÃÂ¸ÃÂ¤ÃÂ CO-OP';
+        tag.innerText = '🤝 CO-OP';
         tag.classList.remove('pvp-tag');
     } else {
-        tag.innerText = 'ÃÂ¢ÃÂ¡Ã¢â¬Â PvP';
+        tag.innerText = '⚔️ PvP';
         tag.classList.add('pvp-tag');
     }
-    lobbyStatus.innerText = 'ÃÂ°ÃÂ¸Ã¢â¬ÂÃ¢â¬Å¾ ÃâÃÂang kÃÂ¡ÃÂºÃÂ¿t nÃÂ¡ÃÂ»Ã¢â¬Ëi server...';
+    lobbyStatus.innerText = '🔄 Connecting to server...';
 }
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Draw remote player (opponent) ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// Draw remote player (opponent) 
 function drawOpponent(ctx) {
     if (!opponentState) return;
     const { x, y, angle, stealthLevel, tongueState, tongueProgress,
-            tongueTargetX, tongueTargetY, buffCount, damageMultiplier, bullets: remoteBullets, lasers: remoteLasers } = opponentState;
+        tongueTargetX, tongueTargetY, buffCount, damageMultiplier, bullets: remoteBullets, lasers: remoteLasers } = opponentState;
 
-    const col   = 'hsl(30, 100%, 55%)'; // Orange for P2
+    const col = 'hsl(30, 100%, 55%)'; // Orange for P2
     const alpha = Math.max(0.07, 1 - (stealthLevel || 0));
     const radius = 18;
 
@@ -1415,6 +1406,7 @@ function drawOpponent(ctx) {
             ctx.shadowBlur = 10; ctx.shadowColor = '#ff8800';
             ctx.fill();
             ctx.restore();
+        }
     }
 
     // Draw opponent's lasers
@@ -1458,7 +1450,7 @@ function drawOpponent(ctx) {
 
     // Robot Arms for Opponent
     if (opponentState.equipped && (stealthLevel || 0) < 0.8 && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
-        opponentState.radius = radius; // Ensure radius is set for drawing
+        opponentState.radius = radius;
         Player.prototype._drawRobotArms.call(opponentState, ctx, alpha, col);
     }
 
@@ -1473,7 +1465,7 @@ function drawOpponent(ctx) {
     // Hexagon body
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
-        const a  = (i / 6) * Math.PI * 2;
+        const a = (i / 6) * Math.PI * 2;
         const px = x + Math.cos(a) * radius;
         const py = y + Math.sin(a) * radius;
         if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
@@ -1500,7 +1492,7 @@ function drawOpponent(ctx) {
     ctx.font = 'bold 10px Orbitron, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffaa44'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff8800';
-    ctx.fillText(mpMode === 'pvp' ? 'ÃÂ¢ÃÂ¡Ã¢â¬Â ENEMY' : 'ÃÂ°ÃÂ¸ÃÂ¤ÃÂ P2', x, y - radius - 14);
+    ctx.fillText(mpMode === 'pvp' ? '⚔️ ENEMY' : '🤝 P2', x, y - radius - 14);
 
     // Buff indicator
     if (buffCount > 0) {
@@ -1513,7 +1505,7 @@ function drawOpponent(ctx) {
     ctx.restore();
 }
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Draw remote enemies (co-op client) ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// Draw remote enemies (co-op client) 
 function drawRemoteEnemies(ctx) {
     for (const re of remoteEnemies) {
         if (re.dead) continue;
@@ -1537,8 +1529,9 @@ function drawRemoteEnemies(ctx) {
 
         // HP bar (if damaged)
         if (re.hp < re.maxHp) {
-            const bw  = r * 2.2, bh = 5;
-            const bx  = re.x - bw / 2, by = re.y - r - 12;
+            const r = re.radius || 12;
+            const bw = r * 2.2, bh = 5;
+            const bx = re.x - bw / 2, by = re.y - r - 12;
             const pct = Math.max(0, re.hp / re.maxHp);
             ctx.save(); ctx.shadowBlur = 0;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -1580,7 +1573,6 @@ if (chatToggleBtn && chatContainer) {
         }
     });
 }
-}
 
 function appendChatMessage(sender, text, type) {
     if (!chatMessages) return;
@@ -1597,7 +1589,7 @@ if (chatSendBtn && chatInput) {
         const text = chatInput.value.trim();
         if (text && socket) {
             socket.emit("chatMessage", text);
-            appendChatMessage("Bạn", text, "self");
+            appendChatMessage("You", text, "self");
             chatInput.value = "";
         }
     };
@@ -1652,4 +1644,3 @@ function showCountdownScreen(callback) {
         }
     }, 1000);
 }
-window.addEventListener('contextmenu', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
