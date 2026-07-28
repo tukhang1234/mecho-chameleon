@@ -324,7 +324,7 @@ class Player {
                             const aimAngle = anyTarget ? Math.atan2(anyTarget.y - this.y, anyTarget.x - this.x) : Math.atan2(mouse.y - this.y, mouse.x - this.x);
                             const fireAngle = isAuto && anyTarget ? aimAngle : Math.atan2(mouse.y - this.y, mouse.x - this.x);
                             
-                            const bulletColor = hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : '#39ff14');
+                            const bulletColor = hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : '#00f3ff');
                             
                             if (hasM4) {
                                 // M4: 2 lasers + bullets
@@ -343,7 +343,7 @@ class Player {
                             
                             if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
                             this.armsAngle = fireAngle;
-                            if (hasM3 || hasM4) {
+                            if (hasM3 || hasM4 || hasM2) {
                                 this.armsPunchAnimL = 5;
                                 this.armsPunchAnimR = 5;
                             }
@@ -546,7 +546,6 @@ class Player {
     }
 
     _drawGun(ctx, alpha, col) {
-        // Small gun barrel on the side
         const a = this.angle;
         const bx = this.x + Math.cos(a) * this.radius;
         const by = this.y + Math.sin(a) * this.radius;
@@ -562,7 +561,6 @@ class Player {
     }
 
     _drawLaserOrb(ctx, alpha) {
-        // Orbiting laser gem
         const a  = this.bodyPulse * 1.5;
         const ox = this.x + Math.cos(a) * (this.radius + 10);
         const oy = this.y + Math.sin(a) * (this.radius + 10);
@@ -577,7 +575,6 @@ class Player {
     }
 
     _drawMissilePod(ctx, alpha) {
-        // Missile pod on opposite side
         const a  = this.angle + Math.PI;
         const bx = this.x + Math.cos(a) * this.radius;
         const by = this.y + Math.sin(a) * this.radius;
@@ -592,6 +589,9 @@ class Player {
         ctx.restore();
     }
 
+    // ==========================================
+    // TÂN TRANG CÁNH TAY ROBOT (UPGRADED VISUALS)
+    // ==========================================
     _drawRobotArms(ctx, alpha, col) {
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -602,7 +602,8 @@ class Player {
         const hasM3 = this.equipped.arms_m3;
         const hasM4 = this.equipped.arms_m4;
         
-        let themeColor = hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : '#39ff14');
+        // Cấp phát màu sắc theo Model để ngầu hơn
+        let themeColor = hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : (hasM2 ? '#00f3ff' : '#ff003c'));
         
         // Base Shoulder positions
         let slx = this.x + Math.cos(this.angle - Math.PI/1.5) * (this.radius + 5);
@@ -611,182 +612,218 @@ class Player {
         let sry = this.y + Math.sin(this.angle + Math.PI/1.5) * (this.radius + 5);
 
         // Hand positions (default floating)
-        let lx = slx + Math.cos(this.angle - Math.PI/2) * 20 + Math.cos(time) * 4;
-        let ly = sly + Math.sin(this.angle - Math.PI/2) * 20 + Math.sin(time) * 4;
+        let lx = slx + Math.cos(this.angle - Math.PI/2) * 22 + Math.cos(time) * 4;
+        let ly = sly + Math.sin(this.angle - Math.PI/2) * 22 + Math.sin(time) * 4;
         
-        let rx = srx + Math.cos(this.angle + Math.PI/2) * 20 + Math.cos(time + Math.PI) * 4;
-        let ry = sry + Math.sin(this.angle + Math.PI/2) * 20 + Math.sin(time + Math.PI) * 4;
+        let rx = srx + Math.cos(this.angle + Math.PI/2) * 22 + Math.cos(time + Math.PI) * 4;
+        let ry = sry + Math.sin(this.angle + Math.PI/2) * 22 + Math.sin(time + Math.PI) * 4;
 
         let leftArmAngle = Math.atan2(ly - sly, lx - slx);
         let rightArmAngle = Math.atan2(ry - sry, rx - srx);
 
         // Punch animation overrides position if active
         if (this.armsPunchAnimL > 0) {
-            const ext = (10 - this.armsPunchAnimL) * 3;
+            const ext = (10 - this.armsPunchAnimL) * 4;
             const a = this.armsAngle || this.angle;
-            lx = slx + Math.cos(a - 0.3) * (18 + ext);
-            ly = sly + Math.sin(a - 0.3) * (18 + ext);
+            lx = slx + Math.cos(a - 0.3) * (20 + ext);
+            ly = sly + Math.sin(a - 0.3) * (20 + ext);
             leftArmAngle = Math.atan2(ly - sly, lx - slx);
         }
         if (this.armsPunchAnimR > 0) {
-            const ext = (10 - this.armsPunchAnimR) * 3;
+            const ext = (10 - this.armsPunchAnimR) * 4;
             const a = this.armsAngle || this.angle;
-            rx = srx + Math.cos(a + 0.3) * (18 + ext);
-            ry = sry + Math.sin(a + 0.3) * (18 + ext);
+            rx = srx + Math.cos(a + 0.3) * (20 + ext);
+            ry = sry + Math.sin(a + 0.3) * (20 + ext);
             rightArmAngle = Math.atan2(ry - sry, rx - srx);
         }
 
-        // Draw articulated arms (2 segments)
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 4;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        
-        // Left arm joints
-        let elx = slx + Math.cos(leftArmAngle + 0.5) * 12;
-        let ely = sly + Math.sin(leftArmAngle + 0.5) * 12;
-        ctx.beginPath(); ctx.moveTo(slx, sly); ctx.lineTo(elx, ely); ctx.lineTo(lx, ly); ctx.stroke();
-        // Inner mechanical wire left
-        ctx.strokeStyle = themeColor; ctx.lineWidth = 1; ctx.shadowBlur = 5; ctx.shadowColor = themeColor;
-        ctx.beginPath(); ctx.moveTo(slx, sly); ctx.lineTo(elx, ely); ctx.lineTo(lx, ly); ctx.stroke();
-        
-        // Right arm joints
-        ctx.strokeStyle = '#444'; ctx.lineWidth = 4; ctx.shadowBlur = 0;
-        let erx = srx + Math.cos(rightArmAngle - 0.5) * 12;
-        let ery = sry + Math.sin(rightArmAngle - 0.5) * 12;
-        ctx.beginPath(); ctx.moveTo(srx, sry); ctx.lineTo(erx, ery); ctx.lineTo(rx, ry); ctx.stroke();
-        // Inner mechanical wire right
-        ctx.strokeStyle = themeColor; ctx.lineWidth = 1; ctx.shadowBlur = 5; ctx.shadowColor = themeColor;
-        ctx.beginPath(); ctx.moveTo(srx, sry); ctx.lineTo(erx, ery); ctx.lineTo(rx, ry); ctx.stroke();
+        let elx = slx + Math.cos(leftArmAngle + 0.5) * 14;
+        let ely = sly + Math.sin(leftArmAngle + 0.5) * 14;
+        let erx = srx + Math.cos(rightArmAngle - 0.5) * 14;
+        let ery = sry + Math.sin(rightArmAngle - 0.5) * 14;
 
-        ctx.shadowBlur = 0;
-        
-        // Shoulders (sockets)
-        ctx.fillStyle = '#222'; ctx.strokeStyle = '#666'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(slx, sly, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(srx, sry, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = themeColor; ctx.shadowBlur = 10; ctx.shadowColor = themeColor;
-        ctx.beginPath(); ctx.arc(slx, sly, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(srx, sry, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
+        // Hàm vẽ từng khớp cánh tay nhiều Layer (Multi-layer arm drawing)
+        const drawCyberArm = (startX, startY, midX, midY, endX, endY, color) => {
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
 
-        // Draw hands and weapons
+            // Lớp 1: Khung xương chịu lực màu đen (Outer skeleton)
+            ctx.strokeStyle = '#111';
+            ctx.lineWidth = 7;
+            ctx.shadowBlur = 5; ctx.shadowColor = '#000';
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(endX, endY); ctx.stroke();
+
+            // Lớp 2: Vỏ giáp kim loại xám (Armor plating)
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(endX, endY); ctx.stroke();
+
+            // Lớp 3: Cáp năng lượng phát sáng lõi trong (Glowing power cables)
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 8; ctx.shadowColor = color;
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(endX, endY); ctx.stroke();
+
+            // Lớp 4: Các chốt xoay (Pivots/Joints)
+            ctx.fillStyle = '#222';
+            ctx.strokeStyle = '#777';
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 0;
+            [ [startX, startY, 6], [midX, midY, 5], [endX, endY, 5] ].forEach(([jx, jy, jr]) => {
+                ctx.beginPath(); ctx.arc(jx, jy, jr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // Chấm sáng giữa khớp (Glowing core)
+                ctx.fillStyle = color; ctx.shadowBlur = 6; ctx.shadowColor = color;
+                ctx.beginPath(); ctx.arc(jx, jy, 2, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        };
+
+        // Vẽ 2 cánh tay chính
+        drawCyberArm(slx, sly, elx, ely, lx, ly, themeColor);
+        drawCyberArm(srx, sry, erx, ery, rx, ry, themeColor);
+
+        // ==========================
+        // VŨ KHÍ NÂNG CẤP (WEAPONS)
+        // ==========================
         ctx.fillStyle = '#222';
         ctx.strokeStyle = themeColor;
         ctx.lineWidth = 2;
         ctx.shadowBlur = 10; ctx.shadowColor = themeColor;
         
         if (hasM1) {
-            // M1: Big boxing gloves (High Quality)
-            ctx.fillStyle = '#b22222'; // Dark red gloves
-            ctx.beginPath(); ctx.arc(lx, ly, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#ff4444'; ctx.beginPath(); ctx.arc(lx+2, ly-2, 3, 0, Math.PI * 2); ctx.fill(); // highlight
-            
-            ctx.fillStyle = '#b22222';
-            ctx.beginPath(); ctx.arc(rx, ry, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#ff4444'; ctx.beginPath(); ctx.arc(rx+2, ry-2, 3, 0, Math.PI * 2); ctx.fill(); // highlight
+            // M1: Găng tay Mecha Brawler cực ngầu (High-tech Gorilla Fists)
+            const drawFist = (fx, fy, fAngle) => {
+                ctx.save();
+                ctx.translate(fx, fy); ctx.rotate(fAngle);
+                
+                // Khối găng tay chính
+                ctx.fillStyle = '#2b2b2b'; ctx.shadowBlur = 5; ctx.shadowColor = '#000';
+                ctx.beginPath(); ctx.roundRect(-8, -10, 20, 20, 4); ctx.fill();
+                
+                // Tấm đệm giáp (Knuckle Plate) đỏ rực
+                ctx.fillStyle = '#ff003c'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff003c';
+                ctx.beginPath(); ctx.roundRect(4, -8, 10, 16, 2); ctx.fill();
+                
+                // Lõi năng lượng (Power Core) chớp nháy trên găng
+                ctx.fillStyle = '#fff'; ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.arc(9, 0, 3, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            };
+            drawFist(lx, ly, leftArmAngle);
+            drawFist(rx, ry, rightArmAngle);
         } 
         else if (hasM2) {
-            // M2: Left hand Dagger, Right hand Gun
-            // Left (Dagger)
-            ctx.fillStyle = '#222';
-            ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            // M2: Kiếm chớp (Plasma Blade) tay trái + Cyber Blaster tay phải
+            
+            // Kiếm chớp tay trái (Plasma Blade)
             ctx.save();
             ctx.translate(lx, ly); ctx.rotate(leftArmAngle);
-            ctx.fillStyle = '#eee'; ctx.shadowBlur = 5; ctx.shadowColor = '#fff';
-            ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(22, 0); ctx.lineTo(0, 3); ctx.fill();
-            // blood groove
-            ctx.fillStyle = '#f00'; ctx.beginPath(); ctx.moveTo(2, -0.5); ctx.lineTo(15, -0.5); ctx.lineTo(15, 0.5); ctx.lineTo(2, 0.5); ctx.fill();
+            // Chuôi kiếm (Hilt)
+            ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
+            ctx.fillRect(0, -4, 12, 8);
+            // Lưỡi kiếm năng lượng
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f3ff';
+            ctx.beginPath(); ctx.moveTo(10, -2); ctx.lineTo(35, 0); ctx.lineTo(10, 2); ctx.fill();
+            // Lõi kiếm
+            ctx.fillStyle = '#00f3ff'; ctx.globalAlpha = 0.5;
+            ctx.beginPath(); ctx.moveTo(10, -4); ctx.lineTo(38, 0); ctx.lineTo(10, 4); ctx.fill();
             ctx.restore();
             
-            // Right (Gun)
-            ctx.fillStyle = '#222';
-            ctx.beginPath(); ctx.arc(rx, ry, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            // Súng Cyber tay phải (Cyber Blaster)
             ctx.save();
             ctx.translate(rx, ry); ctx.rotate(rightArmAngle);
-            ctx.fillStyle = '#444'; ctx.shadowBlur = 0;
-            ctx.fillRect(0, -4, 16, 8); // Gun barrel
-            ctx.fillStyle = themeColor; ctx.shadowBlur = 10;
-            ctx.fillRect(16, -3, 5, 6); // Energy nozzle
+            ctx.fillStyle = '#444'; ctx.shadowBlur = 2; ctx.shadowColor = '#000';
+            ctx.fillRect(-2, -5, 18, 10); // Gun body
+            // Nòng súng phát sáng
+            ctx.fillStyle = '#00f3ff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f3ff';
+            ctx.fillRect(16, -3, 6, 6); // Energy nozzle
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(18, -1, 4, 2); // White hot center
             ctx.restore();
         }
         else if (hasM3 || hasM4) {
-            // M3 & M4 shared lower hands logic (Pistols / Rifles)
-            ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            ctx.save();
-            ctx.translate(lx, ly); ctx.rotate(leftArmAngle);
-            ctx.fillStyle = '#444'; ctx.shadowBlur = 0;
-            ctx.fillRect(0, -3, 14, 6);
-            ctx.fillStyle = themeColor; ctx.shadowBlur = 10;
-            ctx.fillRect(14, -2, 4, 4);
-            ctx.restore();
-            
-            ctx.beginPath(); ctx.arc(rx, ry, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            ctx.save();
-            ctx.translate(rx, ry); ctx.rotate(rightArmAngle);
-            ctx.fillStyle = '#444'; ctx.shadowBlur = 0;
-            ctx.fillRect(0, -3, 14, 6);
-            ctx.fillStyle = themeColor; ctx.shadowBlur = 10;
-            ctx.fillRect(14, -2, 4, 4);
-            ctx.restore();
+            // M3 & M4 dùng chung mô hình súng bắn tỉa ở tay
+            const drawBlaster = (gx, gy, gAngle, color) => {
+                ctx.save();
+                ctx.translate(gx, gy); ctx.rotate(gAngle);
+                ctx.fillStyle = '#333'; ctx.shadowBlur = 3; ctx.shadowColor = '#000';
+                ctx.fillRect(-4, -4, 16, 8);
+                // Nòng súng kép
+                ctx.fillStyle = color; ctx.shadowBlur = 12; ctx.shadowColor = color;
+                ctx.fillRect(12, -3, 5, 2);
+                ctx.fillRect(12, 1, 5, 2);
+                ctx.restore();
+            };
+            drawBlaster(lx, ly, leftArmAngle, themeColor);
+            drawBlaster(rx, ry, rightArmAngle, themeColor);
 
-            // Upper arms for M3 (Forearm guns)
+            // Giáp tay cho M3 (Armor plating)
             if (hasM3) {
                 ctx.save();
                 ctx.translate(elx, ely); ctx.rotate(leftArmAngle);
-                ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
-                ctx.fillRect(0, -7, 18, 5);
-                ctx.fillStyle = themeColor; ctx.shadowBlur = 8;
-                ctx.fillRect(18, -6, 6, 3);
+                ctx.fillStyle = '#222'; ctx.shadowBlur = 0;
+                ctx.fillRect(-6, -8, 20, 6);
+                ctx.fillStyle = themeColor; ctx.shadowBlur = 8; ctx.shadowColor = themeColor;
+                ctx.fillRect(8, -7, 6, 4);
                 ctx.restore();
 
                 ctx.save();
                 ctx.translate(erx, ery); ctx.rotate(rightArmAngle);
-                ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
-                ctx.fillRect(0, 2, 18, 5);
-                ctx.fillStyle = themeColor; ctx.shadowBlur = 8;
-                ctx.fillRect(18, 3, 6, 3);
+                ctx.fillStyle = '#222'; ctx.shadowBlur = 0;
+                ctx.fillRect(-6, 2, 20, 6);
+                ctx.fillStyle = themeColor; ctx.shadowBlur = 8; ctx.shadowColor = themeColor;
+                ctx.fillRect(8, 3, 6, 4);
                 ctx.restore();
             }
             
-            // Supreme 4-Arms (M4) extra shoulders
+            // Xúc tu cơ khí Doc Ock cho M4 (Supreme 4-Arms)
             if (hasM4) {
-                // Draw 2 extra laser arms popping from the back
-                let xt1 = this.x + Math.cos(this.angle - Math.PI*0.8) * (this.radius + 2);
-                let yt1 = this.y + Math.sin(this.angle - Math.PI*0.8) * (this.radius + 2);
-                let xt2 = this.x + Math.cos(this.angle + Math.PI*0.8) * (this.radius + 2);
-                let yt2 = this.y + Math.sin(this.angle + Math.PI*0.8) * (this.radius + 2);
+                // Tọa độ gắn ở lưng
+                let xt1 = this.x + Math.cos(this.angle - Math.PI*0.8) * (this.radius - 2);
+                let yt1 = this.y + Math.sin(this.angle - Math.PI*0.8) * (this.radius - 2);
+                let xt2 = this.x + Math.cos(this.angle + Math.PI*0.8) * (this.radius - 2);
+                let yt2 = this.y + Math.sin(this.angle + Math.PI*0.8) * (this.radius - 2);
 
                 let a = this.armsAngle || this.angle;
-                let tx1 = xt1 + Math.cos(a - 0.2) * 15;
-                let ty1 = yt1 + Math.sin(a - 0.2) * 15;
-                let tx2 = xt2 + Math.cos(a + 0.2) * 15;
-                let ty2 = yt2 + Math.sin(a + 0.2) * 15;
-
-                ctx.strokeStyle = '#222'; ctx.lineWidth = 5; ctx.shadowBlur = 0;
-                ctx.beginPath(); ctx.moveTo(xt1, yt1); ctx.lineTo(tx1, ty1); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(xt2, yt2); ctx.lineTo(tx2, ty2); ctx.stroke();
                 
-                ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 2; ctx.shadowBlur = 10;
-                ctx.beginPath(); ctx.moveTo(xt1, yt1); ctx.lineTo(tx1, ty1); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(xt2, yt2); ctx.lineTo(tx2, ty2); ctx.stroke();
+                // Các điểm uốn khúc của xúc tu
+                let midTx1 = xt1 + Math.cos(a - 0.8) * 12;
+                let midTy1 = yt1 + Math.sin(a - 0.8) * 12;
+                let tx1 = midTx1 + Math.cos(a - 0.1) * 18;
+                let ty1 = midTy1 + Math.sin(a - 0.1) * 18;
 
-                // Laser cannons
-                ctx.save();
-                ctx.translate(tx1, ty1); ctx.rotate(a - 0.2);
-                ctx.fillStyle = '#222'; ctx.shadowBlur = 0;
-                ctx.fillRect(-4, -4, 20, 8);
-                ctx.fillStyle = '#ffaa00'; ctx.shadowBlur = 15;
-                ctx.fillRect(16, -2, 8, 4);
-                ctx.restore();
+                let midTx2 = xt2 + Math.cos(a + 0.8) * 12;
+                let midTy2 = yt2 + Math.sin(a + 0.8) * 12;
+                let tx2 = midTx2 + Math.cos(a + 0.1) * 18;
+                let ty2 = midTy2 + Math.sin(a + 0.1) * 18;
 
-                ctx.save();
-                ctx.translate(tx2, ty2); ctx.rotate(a + 0.2);
-                ctx.fillStyle = '#222'; ctx.shadowBlur = 0;
-                ctx.fillRect(-4, -4, 20, 8);
-                ctx.fillStyle = '#ffaa00'; ctx.shadowBlur = 15;
-                ctx.fillRect(16, -2, 8, 4);
-                ctx.restore();
+                // Vẽ xúc tu
+                drawCyberArm(xt1, yt1, midTx1, midTy1, tx1, ty1, '#ffaa00');
+                drawCyberArm(xt2, yt2, midTx2, midTy2, tx2, ty2, '#ffaa00');
+
+                // Pháo Plasma hạng nặng (Heavy Plasma Cannons)
+                const drawCannon = (cx, cy, cAngle) => {
+                    ctx.save();
+                    ctx.translate(cx, cy); ctx.rotate(cAngle);
+                    
+                    // Thân pháo
+                    ctx.fillStyle = '#222'; ctx.shadowBlur = 5; ctx.shadowColor = '#000';
+                    ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(16, -4); ctx.lineTo(16, 4); ctx.lineTo(-6, 6); ctx.fill();
+                    
+                    // Lõi tản nhiệt cam
+                    ctx.fillStyle = '#ffaa00'; ctx.shadowBlur = 10; ctx.shadowColor = '#ffaa00';
+                    for(let i=0; i<3; i++) ctx.fillRect(2 + i*4, -3, 2, 6);
+                    
+                    // Đầu nòng súng
+                    ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = '#ffaa00';
+                    ctx.fillRect(16, -2, 6, 4);
+                    
+                    ctx.restore();
+                };
+
+                drawCannon(tx1, ty1, a - 0.1);
+                drawCannon(tx2, ty2, a + 0.1);
             }
         }
 
