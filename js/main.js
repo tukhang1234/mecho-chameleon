@@ -1580,6 +1580,7 @@ if (chatToggleBtn && chatContainer) {
         }
     });
 }
+}
 
 function appendChatMessage(sender, text, type) {
     if (!chatMessages) return;
