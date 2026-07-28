@@ -252,16 +252,29 @@ class Boss extends Enemy {
         if (this.y < this.radius) { this.y = this.radius; this.vy *= -0.5; }
         if (this.y > window.innerHeight - this.radius) { this.y = window.innerHeight - this.radius; this.vy *= -0.5; }
 
-        // Boss attack: shoot projectiles (type 2+)
-        if (this.bossType >= 2 && this.attackTimer % (90 - this.bossType * 8) === 0) {
-            const shots = this.bossType === 2 ? 4 : 8;
-            for (let i = 0; i < shots; i++) {
-                const a = (i / shots) * Math.PI * 2 + this.angle;
-                this.projectiles.push({
-                    x: this.x, y: this.y,
-                    vx: Math.cos(a) * 3.5, vy: Math.sin(a) * 3.5,
-                    life: 120, radius: 6, color: this.color
-                });
+        // Boss attack: shoot projectiles based on type
+        const shootInterval = Math.max(30, 90 - this.bossType * 10);
+        if (this.attackTimer % shootInterval === 0) {
+            const bType = ((this.bossType - 1) % 5) + 1;
+            if (bType === 1) {
+                // Shotgun burst at player
+                if (player.stealthLevel < 0.75) {
+                    for(let i = -1; i <= 1; i++) {
+                        const a = Math.atan2(player.y - this.y, player.x - this.x) + i * 0.2;
+                        this.projectiles.push({ x: this.x, y: this.y, vx: Math.cos(a)*4, vy: Math.sin(a)*4, life: 120, radius: 8, color: this.color });
+                    }
+                }
+            } else if (bType === 2) {
+                // Radial burst
+                for (let i = 0; i < 10; i++) {
+                    const a = (i / 10) * Math.PI * 2 + this.angle;
+                    this.projectiles.push({ x: this.x, y: this.y, vx: Math.cos(a) * 3.5, vy: Math.sin(a) * 3.5, life: 120, radius: 6, color: this.color });
+                }
+            } else {
+                // Spiral madness
+                const a = this.attackTimer * 0.1;
+                this.projectiles.push({ x: this.x, y: this.y, vx: Math.cos(a)*5, vy: Math.sin(a)*5, life: 120, radius: 10, color: '#ffffff' });
+                this.projectiles.push({ x: this.x, y: this.y, vx: Math.cos(a + Math.PI)*5, vy: Math.sin(a + Math.PI)*5, life: 120, radius: 10, color: '#ffffff' });
             }
         }
 

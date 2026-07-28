@@ -130,10 +130,15 @@ function buildStars() {
 
 // Input
 window.addEventListener('keydown', e => {
+    const focused = document.activeElement;
+    if (focused && focused.id === 'chat-input') {
+        if (e.key === 'Escape') focused.blur();
+        return; // Cho phÃ©p gÃµ chá»¯ bÃ¬nh thÆ°á»ng
+    }
+    
     // If a game UI button is focused while playing, forcefully blur it
     // This prevents Space/Enter from triggering hidden menu screens
     if (gameState === 'playing') {
-        const focused = document.activeElement;
         if (focused && focused.tagName === 'BUTTON') {
             focused.blur();
         }
@@ -141,6 +146,13 @@ window.addEventListener('keydown', e => {
         if (e.key === ' ' || e.key === 'Enter') e.preventDefault();
     }
     keys[e.key] = true;
+    
+    // Toggle Stats Panel
+    if (e.key.toLowerCase() === 'c') {
+        const statsPanel = document.getElementById('stats-panel');
+        if (statsPanel) statsPanel.classList.toggle('hidden');
+    }
+
     if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
@@ -179,16 +191,16 @@ function updateShopUI() {
             if (equippedItems[itemType]) {
                 el.classList.add('equipped');
                 btn.className = 'buy-btn equipped-btn';
-                btn.innerText = 'ĐÃ TRANG BỊ';
+                btn.innerText = 'ÄÃƒ TRANG Bá»Š';
             } else {
                 el.classList.remove('equipped');
                 btn.className = 'buy-btn equip-btn';
-                btn.innerText = 'TRANG BỊ';
+                btn.innerText = 'TRANG Bá»Š';
             }
         } else {
             el.classList.remove('equipped');
             btn.className = 'buy-btn';
-            btn.innerText = price + ' 🪙';
+            btn.innerText = price + ' ðŸª™';
         }
     });
 }
@@ -237,7 +249,7 @@ function initGame() {
     // Multiplayer HUD elements
     if (mpMode) {
         p1Label.classList.remove('hidden');
-        p1Label.innerText = playerIndex === 1 ? '👤 P1 — YOU (HOST)' : '👤 P2 — YOU';
+        p1Label.innerText = playerIndex === 1 ? 'ðŸ‘¤ P1 â€” YOU (HOST)' : 'ðŸ‘¤ P2 â€” YOU';
         document.getElementById('chat-toggle-btn').classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
@@ -256,7 +268,7 @@ function initGame() {
     audio.stopMusic();
     audio.startGameMusic();
 
-    // PvP: no enemies, no waves — just players vs each other
+    // PvP: no enemies, no waves â€” just players vs each other
     if (mpMode === 'pvp') {
         spawnGear(); spawnGear(); spawnGear();
         // Periodically drop power-ups for PvP
@@ -297,7 +309,7 @@ function startNextWave() {
     waveActive       = true;
 
     showWaveAnnounce(isBossWave
-        ? `⚠ WAVE ${waveNumber} — BOSS INCOMING!`
+        ? `âš  WAVE ${waveNumber} â€” BOSS INCOMING!`
         : `WAVE ${waveNumber}`
     );
 
@@ -378,7 +390,7 @@ function spawnUpgrade() {
 
 function showUpgradeText(text) {
     const notif = document.getElementById('upgrade-notification');
-    notif.innerText = '⚙ ' + text;
+    notif.innerText = 'âš™ ' + text;
     notif.classList.remove('hidden');
     const fresh = notif.cloneNode(true);
     notif.parentNode.replaceChild(fresh, notif);
@@ -407,6 +419,18 @@ function updateHUD() {
         stealthBar.innerText = pct + '%';
         stealthBar.classList.remove('ready');
     }
+    
+    // Update Stats Panel
+    const statHp = document.getElementById('stat-hp');
+    const statDmg = document.getElementById('stat-dmg');
+    const statSpd = document.getElementById('stat-spd');
+    const statCd = document.getElementById('stat-cd');
+    const statStealth = document.getElementById('stat-stealth');
+    if (statHp) statHp.innerText = `${Math.floor(playerHealth)}/${maxPlayerHealth}`;
+    if (statDmg) statDmg.innerText = `${player.finalDamage ? (player.finalDamage/10).toFixed(1) : 1.0}x`;
+    if (statSpd) statSpd.innerText = `${player.speed.toFixed(1)}`;
+    if (statCd) statCd.innerText = `${player.armsCooldown || 0} f`;
+    if (statStealth) statStealth.innerText = `${Math.floor(player.stealthLevel * 100)}%`;
 }
 
 function updateOppHealthBar(hp) {
@@ -460,7 +484,7 @@ function checkCollisions() {
         if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
             if (p.isHealthPill) {
                 playerHealth = Math.min(maxPlayerHealth, playerHealth + 40);
-                showUpgradeText('+40 HP HỒI PHỤC!');
+                showUpgradeText('+40 HP Há»’I PHá»¤C!');
                 if (audio) audio.playSound('pickup');
             } else {
                 player.applyBuff(p.buffType);
@@ -475,7 +499,7 @@ function checkCollisions() {
         }
     }
 
-    // ──── PvP: tongue/bullet/laser vs OPPONENT ────────────────────
+    // â”€â”€â”€â”€ PvP: tongue/bullet/laser vs OPPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (mpMode === 'pvp' && opponentState && socket) {
         const oppR = 18;
 
@@ -517,13 +541,13 @@ function checkCollisions() {
         }
     }
 
-    // ──── Co-op CLIENT: hit remote enemies ────────────────────────
+    // â”€â”€â”€â”€ Co-op CLIENT: hit remote enemies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (mpMode === 'coop' && playerIndex === 2 && socket) {
         checkCoopClientCollisions(tip);
         return; // skip normal enemy collisions (client has no local enemies)
     }
 
-    // ──── Normal (single-player OR co-op HOST): enemies ───────────
+    // â”€â”€â”€â”€ Normal (single-player OR co-op HOST): enemies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
 
@@ -791,7 +815,7 @@ function update() {
     updateDamageNumbers();
     updateHUD();
 
-    // ── Multiplayer: send state & sync ──
+    // â”€â”€ Multiplayer: send state & sync â”€â”€
     if (mpMode && socket) {
         sendPlayerState();
         if (mpMode === 'coop' && playerIndex === 1) sendEnemySync();
@@ -837,7 +861,7 @@ function draw() {
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ff003c';
             ctx.shadowBlur = 8; ctx.shadowColor = '#ff003c';
-            ctx.fillText('⚠ BOSS WAVE ⚠', canvas.width / 2, 50);
+            ctx.fillText('âš  BOSS WAVE âš ', canvas.width / 2, 50);
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
         }
@@ -857,7 +881,9 @@ function draw() {
 function gameLoop() {
     update();
     draw();
-    if (gameState === 'playing') animId = requestAnimationFrame(gameLoop);
+    if (gameState === 'playing' || gameState === 'countdown') {
+        animId = requestAnimationFrame(gameLoop);
+    }
 }
 
 // ==========================
@@ -913,7 +939,9 @@ playBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     mpMode = null; playerIndex = 0; opponentState = null;
     if (!audio) audio = new AudioSystem();
-    initGame();
+    showLoadingScreen('ĐANG TẢI TRẬN ĐẤU...', 1000, () => {
+        initGame();
+    });
 });
 
 // ==========================
@@ -1001,7 +1029,7 @@ document.addEventListener('click', (e) => {
             } else {
                 // Not enough coins error
                 e.target.parentElement.classList.add('shake-error');
-                e.target.innerText = 'THIẾU XU!';
+                e.target.innerText = 'THIáº¾U XU!';
                 setTimeout(() => {
                     e.target.parentElement.classList.remove('shake-error');
                     updateShopUI();
@@ -1030,9 +1058,16 @@ document.addEventListener('click', (e) => {
 restartBtn.addEventListener('click', (e) => {
     e.target.blur();
     if (gameState === 'playing') return;
-    gameOverScreen.classList.add('hidden');
-    if (!audio) audio = new AudioSystem();
-    initGame();
+    if (mpMode && socket) {
+        socket.emit('request_restart');
+        e.target.innerText = 'Chờ đối thủ (1/2)...';
+    } else {
+        gameOverScreen.classList.add('hidden');
+        if (!audio) audio = new AudioSystem();
+        showLoadingScreen('ĐANG TẢI LẠI TRẬN ĐẤU...', 1000, () => {
+            initGame();
+        });
+    }
 });
 
 menuFromGameOverBtn.addEventListener('click', (e) => {
@@ -1041,12 +1076,39 @@ menuFromGameOverBtn.addEventListener('click', (e) => {
     mainMenu.classList.remove('hidden');
 });
 
+const exitGameBtn = document.getElementById('exit-game-btn');
+if (exitGameBtn) {
+    exitGameBtn.addEventListener('click', (e) => {
+        e.target.blur();
+        if (gameState === 'playing') {
+            endGame(); // Hoáº·c xá»­ lÃ½ thoÃ¡t nhanh
+            document.getElementById('stats-panel').classList.add('hidden');
+            if (socket) socket.emit('player_died');
+        }
+    });
+}
+const statsToggleBtn = document.getElementById('stats-toggle-btn');
+if (statsToggleBtn) {
+    statsToggleBtn.addEventListener('click', (e) => {
+        e.target.blur();
+        const panel = document.getElementById('stats-panel');
+        if (panel) panel.classList.toggle('hidden');
+    });
+}
+
 victoryRestartBtn.addEventListener('click', (e) => {
     e.target.blur();
     if (gameState === 'playing') return;
-    victoryScr.classList.add('hidden');
-    if (!audio) audio = new AudioSystem();
-    initGame();
+    if (mpMode && socket) {
+        socket.emit('request_restart');
+        e.target.innerText = 'Chờ đối thủ (1/2)...';
+    } else {
+        victoryScr.classList.add('hidden');
+        if (!audio) audio = new AudioSystem();
+        showLoadingScreen('ĐANG TẢI LẠI TRẬN ĐẤU...', 1000, () => {
+            initGame();
+        });
+    }
 });
 
 menuFromVictoryBtn.addEventListener('click', (e) => {
@@ -1065,7 +1127,7 @@ document.addEventListener('click', (e) => {
     if (gameState === 'menu') audio.startMenuMusic();
 });
 
-// ── Multiplayer buttons ──────────────────────────────────────────
+// â”€â”€ Multiplayer buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 mpBtn.addEventListener('click', (e) => {
     if (e) e.target.blur();
     if (!audio) audio = new AudioSystem();
@@ -1104,7 +1166,7 @@ cancelLobbyBtn.addEventListener('click', (e) => {
 // MULTIPLAYER FUNCTIONS
 // ==========================
 
-// ── Connect to server and find a match ────────────────────────
+// â”€â”€ Connect to server and find a match â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function findMatch(mode) {
     if (!socket) {
         socket = io();
@@ -1117,12 +1179,12 @@ function findMatch(mode) {
 
 function setupSocketListeners() {
     socket.on('waiting', () => {
-        lobbyStatus.innerText = '⏳ Đang chờ người chơi thứ 2...';
+        lobbyStatus.innerText = 'â³ Äang chá» ngÆ°á»i chÆ¡i thá»© 2...';
     });
 
     socket.on('chatMessage', (text) => {
         if (typeof appendChatMessage === 'function') {
-            appendChatMessage("Đồng đội", text, "other");
+            appendChatMessage("Äá»“ng Ä‘á»™i", text, "other");
         }
     });
 
@@ -1133,15 +1195,51 @@ function setupSocketListeners() {
         pvpOpponentHealth = 100;
         tongueHitOpp = false;
 
-        const modeLabel = mode === 'coop' ? '🤝 CO-OP' : '⚔ PvP';
+        const modeLabel = mode === 'coop' ? 'ðŸ¤ CO-OP' : 'âš” PvP';
         const roleLabel = idx === 1 ? 'HOST (P1)' : 'CLIENT (P2)';
-        lobbyStatus.innerText = `✅ Đã ghép ${modeLabel}! Bạn là ${roleLabel}. Đang bắt đầu...`;
+        lobbyStatus.innerText = `âœ… ÄÃ£ ghÃ©p ${modeLabel}! Báº¡n lÃ  ${roleLabel}. Äang báº¯t Ä‘áº§u...`;
 
         setTimeout(() => {
             lobbyScr.classList.add('hidden');
             if (!audio) audio = new AudioSystem();
-            initGame();
+            showLoadingScreen('ĐANG TẢI TRẬN ĐẤU...', 1500, () => {
+                initGame();
+                if (mpMode === 'pvp') {
+                    if (playerIndex === 1) player.x = 200;
+                    else player.x = canvas.width - 200;
+                    player.y = canvas.height / 2;
+                    gameState = 'countdown';
+                    showCountdownScreen(() => {
+                        gameState = 'playing';
+                    });
+                }
+            });
         }, 1800);
+    });
+
+    socket.on('restart_vote_status', (data) => {
+        const btn = gameOverScreen.classList.contains('hidden') ? victoryRestartBtn : restartBtn;
+        if (btn) btn.innerText = `Chờ đối thủ (${data.votes}/2)...`;
+    });
+
+    socket.on('restart_game', () => {
+        gameOverScreen.classList.add('hidden');
+        victoryScr.classList.add('hidden');
+        if (restartBtn) restartBtn.innerText = 'CHƠI LẠI';
+        if (victoryRestartBtn) victoryRestartBtn.innerText = 'CHƠI LẠI';
+        if (!audio) audio = new AudioSystem();
+        showLoadingScreen('ĐANG TẢI LẠI TRẬN ĐẤU...', 1000, () => {
+            initGame();
+            if (mpMode === 'pvp') {
+                if (playerIndex === 1) player.x = 200;
+                else player.x = canvas.width - 200;
+                player.y = canvas.height / 2;
+                gameState = 'countdown';
+                showCountdownScreen(() => {
+                    gameState = 'playing';
+                });
+            }
+        });
     });
 
     socket.on('opponent_state', (data) => {
@@ -1163,7 +1261,7 @@ function setupSocketListeners() {
         if (data.waveAnnounce) showWaveAnnounce(data.waveAnnounce);
     });
 
-    // Co-op HOST: client hit an enemy — apply damage
+    // Co-op HOST: client hit an enemy â€” apply damage
     socket.on('client_hit', ({ netId, damage }) => {
         if (mpMode !== 'coop' || playerIndex !== 1) return;
         const e = enemies.find(en => en.netId === netId);
@@ -1186,7 +1284,7 @@ function setupSocketListeners() {
         if (screenShake) screenShake.trigger(5, 8);
     });
 
-    // PvP: opponent died — this player wins!
+    // PvP: opponent died â€” this player wins!
     socket.on('opponent_died', () => {
         if (mpMode === 'pvp' && gameState === 'playing') {
             showVictory();
@@ -1196,7 +1294,7 @@ function setupSocketListeners() {
     socket.on('opponent_disconnected', () => {
         if (gameState === 'playing') {
             opponentState = null;
-            showWaveAnnounce('⚠ Đối thủ ngắt kết nối!');
+            showWaveAnnounce('âš  Äá»‘i thá»§ ngáº¯t káº¿t ná»‘i!');
             setTimeout(() => {
                 if (gameState === 'playing') endGame();
             }, 2500);
@@ -1205,12 +1303,12 @@ function setupSocketListeners() {
 
     socket.on('disconnect', () => {
         if (gameState === 'playing') {
-            showWaveAnnounce('⚠ Mất kết nối server!');
+            showWaveAnnounce('âš  Máº¥t káº¿t ná»‘i server!');
         }
     });
 }
 
-// ── Send this player's state to server ────────────────────────
+// â”€â”€ Send this player's state to server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function sendPlayerState() {
     if (!socket || !socket.connected || gameState !== 'playing') return;
     socket.emit('player_state', {
@@ -1236,7 +1334,7 @@ function sendPlayerState() {
     });
 }
 
-// ── Co-op HOST: send enemy positions to client (~20fps) ───────
+// â”€â”€ Co-op HOST: send enemy positions to client (~20fps) â”€â”€â”€â”€â”€â”€â”€
 function sendEnemySync() {
     if (!socket || !socket.connected) return;
     syncFrame++;
@@ -1273,21 +1371,21 @@ function sendEnemySync() {
     });
 }
 
-// ── Lobby UI helpers ───────────────────────────────────────────
+// â”€â”€ Lobby UI helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showLobbyScreen(mode) {
     lobbyScr.classList.remove('hidden');
     const tag = lobbyModeLabel;
     if (mode === 'coop') {
-        tag.innerText = '🤝 CO-OP';
+        tag.innerText = 'ðŸ¤ CO-OP';
         tag.classList.remove('pvp-tag');
     } else {
-        tag.innerText = '⚔ PvP';
+        tag.innerText = 'âš” PvP';
         tag.classList.add('pvp-tag');
     }
-    lobbyStatus.innerText = '🔄 Đang kết nối server...';
+    lobbyStatus.innerText = 'ðŸ”„ Äang káº¿t ná»‘i server...';
 }
 
-// ── Draw remote player (opponent) ────────────────────────────
+// â”€â”€ Draw remote player (opponent) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawOpponent(ctx) {
     if (!opponentState) return;
     const { x, y, angle, stealthLevel, tongueState, tongueProgress,
@@ -1377,7 +1475,7 @@ function drawOpponent(ctx) {
     ctx.font = 'bold 10px Orbitron, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffaa44'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff8800';
-    ctx.fillText(mpMode === 'pvp' ? '⚔ ENEMY' : '🤝 P2', x, y - radius - 14);
+    ctx.fillText(mpMode === 'pvp' ? 'âš” ENEMY' : 'ðŸ¤ P2', x, y - radius - 14);
 
     // Buff indicator
     if (buffCount > 0) {
@@ -1390,7 +1488,7 @@ function drawOpponent(ctx) {
     ctx.restore();
 }
 
-// ── Draw remote enemies (co-op client) ────────────────────────
+// â”€â”€ Draw remote enemies (co-op client) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function drawRemoteEnemies(ctx) {
     for (const re of remoteEnemies) {
         if (re.dead) continue;
@@ -1497,3 +1595,52 @@ if (chatSendBtn && chatInput) {
     });
 }
 
+
+ f u n c t i o n   s h o w L o a d i n g S c r e e n ( t e x t ,   d u r a t i o n ,   c a l l b a c k )   { 
+         c o n s t   l o a d i n g S c r e e n   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l o a d i n g - s c r e e n ' ) ; 
+         c o n s t   l o a d i n g T e x t   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l o a d i n g - t e x t ' ) ; 
+         i f   ( l o a d i n g S c r e e n   & &   l o a d i n g T e x t )   { 
+                 l o a d i n g T e x t . i n n e r T e x t   =   t e x t ; 
+                 l o a d i n g S c r e e n . c l a s s L i s t . r e m o v e ( ' h i d d e n ' ) ; 
+                 s e t T i m e o u t ( ( )   = >   { 
+                         l o a d i n g S c r e e n . c l a s s L i s t . a d d ( ' h i d d e n ' ) ; 
+                         i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
+                 } ,   d u r a t i o n ) ; 
+         }   e l s e   { 
+                 i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
+         } 
+ } 
+ 
+ f u n c t i o n   s h o w C o u n t d o w n S c r e e n ( c a l l b a c k )   { 
+         c o n s t   s c r e e n   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' c o u n t d o w n - s c r e e n ' ) ; 
+         c o n s t   t e x t E l   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' c o u n t d o w n - t e x t ' ) ; 
+         i f   ( ! s c r e e n   | |   ! t e x t E l )   { 
+                 i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
+                 r e t u r n ; 
+         } 
+         s c r e e n . c l a s s L i s t . r e m o v e ( ' h i d d e n ' ) ; 
+         s c r e e n . c l a s s L i s t . r e m o v e ( ' f a d e - o u t ' ) ; 
+         l e t   c o u n t   =   3 ; 
+         t e x t E l . i n n e r T e x t   =   c o u n t ; 
+         t e x t E l . s t y l e . c o l o r   =   ' # f f 0 0 f f ' ; 
+ 
+         c o n s t   i n t e r v a l   =   s e t I n t e r v a l ( ( )   = >   { 
+                 c o u n t - - ; 
+                 i f   ( c o u n t   >   0 )   { 
+                         t e x t E l . i n n e r T e x t   =   c o u n t ; 
+                 }   e l s e   i f   ( c o u n t   = = =   0 )   { 
+                         t e x t E l . i n n e r T e x t   =   ' S T A R T ! ' ; 
+                         t e x t E l . s t y l e . c o l o r   =   ' # 0 0 f 3 f f ' ; 
+                 }   e l s e   { 
+                         c l e a r I n t e r v a l ( i n t e r v a l ) ; 
+                         s c r e e n . c l a s s L i s t . a d d ( ' f a d e - o u t ' ) ; 
+                         s e t T i m e o u t ( ( )   = >   { 
+                                 s c r e e n . c l a s s L i s t . a d d ( ' h i d d e n ' ) ; 
+                                 i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
+                         } ,   5 0 0 ) ; 
+                 } 
+         } ,   1 0 0 0 ) ; 
+ } 
+ 
+ 
+ 
