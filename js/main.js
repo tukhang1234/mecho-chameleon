@@ -130,7 +130,11 @@ function buildStars() {
 window.addEventListener('keydown', e => {
     const focused = document.activeElement;
     if (focused && focused.id === 'chat-input') {
-        if (e.key === 'Escape') focused.blur();
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            if (typeof toggleChat === 'function') toggleChat(false);
+            else focused.blur();
+        }
         return; // Allow normal typing in chat
     }
 
@@ -145,10 +149,21 @@ window.addEventListener('keydown', e => {
     }
     keys[e.key] = true;
 
-    // Toggle Stats Panel
-    if (e.key.toLowerCase() === 'c') {
+    // Toggle Stats Panel — works in ALL modes (C key)
+    if (gameState === 'playing' && e.key.toLowerCase() === 'c') {
         const statsPanel = document.getElementById('stats-panel');
         if (statsPanel) statsPanel.classList.toggle('hidden');
+    }
+
+    // Toggle Chat — only in multiplayer (T key)
+    if (gameState === 'playing' && e.key.toLowerCase() === 't' && mpMode) {
+        const chatContainer = document.getElementById('chat-container');
+        const chatInput = document.getElementById('chat-input');
+        if (chatContainer) {
+            const wasHidden = chatContainer.classList.contains('hidden');
+            chatContainer.classList.toggle('hidden');
+            if (wasHidden && chatInput) chatInput.focus();
+        }
     }
 
     if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
@@ -251,15 +266,26 @@ function initGame() {
         }
     }
 
+    // Stats toggle button: always show while playing (ALL modes)
+    const statsToggleBtn2 = document.getElementById('stats-toggle-btn');
+    if (statsToggleBtn2) statsToggleBtn2.classList.remove('hidden');
+    // Ensure panel starts closed
+    const statsPanel2 = document.getElementById('stats-panel');
+    if (statsPanel2) statsPanel2.classList.add('hidden');
+
     // Multiplayer HUD elements
     if (mpMode) {
         p1Label.classList.remove('hidden');
         p1Label.innerText = playerIndex === 1 ? '👤 P1 — YOU (HOST)' : '👤 P2 — YOU';
         document.getElementById('chat-toggle-btn').classList.remove('hidden');
+        const hint = document.getElementById('chat-key-hint');
+        if (hint) hint.classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
         document.getElementById('chat-toggle-btn').classList.add('hidden');
         document.getElementById('chat-container').classList.add('hidden');
+        const hint = document.getElementById('chat-key-hint');
+        if (hint) hint.classList.add('hidden');
     }
 
     if (mpMode === 'pvp') {
@@ -425,17 +451,21 @@ function updateHUD() {
         stealthBar.classList.remove('ready');
     }
 
-    // Update Stats Panel
+    // Update Stats Panel (now includes score + wave)
     const statHp = document.getElementById('stat-hp');
     const statDmg = document.getElementById('stat-dmg');
     const statSpd = document.getElementById('stat-spd');
     const statCd = document.getElementById('stat-cd');
     const statStealth = document.getElementById('stat-stealth');
+    const statScore = document.getElementById('stat-score');
+    const statWave = document.getElementById('stat-wave');
     if (statHp) statHp.innerText = `${Math.floor(playerHealth)}/${maxPlayerHealth}`;
-    if (statDmg) statDmg.innerText = `${player.finalDamage ? (player.finalDamage / 10).toFixed(1) : 1.0}x`;
+    if (statDmg) statDmg.innerText = `${player.finalDamage ? player.finalDamage : 40}x`;
     if (statSpd) statSpd.innerText = `${player.speed.toFixed(1)}`;
-    if (statCd) statCd.innerText = `${player.armsCooldown || 0} f`;
+    if (statCd) statCd.innerText = `${player.armsCooldown || 0}f`;
     if (statStealth) statStealth.innerText = `${Math.floor(player.stealthLevel * 100)}%`;
+    if (statScore) statScore.innerText = Math.floor(score);
+    if (statWave) statWave.innerText = waveNumber || 1;
 }
 
 function updateOppHealthBar(hp) {
@@ -904,6 +934,18 @@ function endGame() {
     finalScoreEl.innerText = Math.floor(score);
     finalGearsEl.innerText = gears;
     if (finalWaveEl) finalWaveEl.innerText = waveNumber;
+
+    // Hide in-game UI panels
+    const statsToggleBtnEnd = document.getElementById('stats-toggle-btn');
+    const statsPanelEnd = document.getElementById('stats-panel');
+    const chatToggleBtnEnd = document.getElementById('chat-toggle-btn');
+    const chatContainerEnd = document.getElementById('chat-container');
+    const chatHintEnd = document.getElementById('chat-key-hint');
+    if (statsToggleBtnEnd) statsToggleBtnEnd.classList.add('hidden');
+    if (statsPanelEnd) statsPanelEnd.classList.add('hidden');
+    if (chatToggleBtnEnd) chatToggleBtnEnd.classList.add('hidden');
+    if (chatContainerEnd) chatContainerEnd.classList.add('hidden');
+    if (chatHintEnd) chatHintEnd.classList.add('hidden');
 
     // Notify opponent in PvP that this player died
     if (socket && mpMode === 'pvp') {
@@ -1569,11 +1611,31 @@ const chatInput = document.getElementById("chat-input");
 const chatSendBtn = document.getElementById("chat-send-btn");
 const chatMessages = document.getElementById("chat-messages");
 
+function toggleChat(forceOpen) {
+    if (!chatContainer) return;
+    const isHidden = chatContainer.classList.contains("hidden");
+    const shouldOpen = forceOpen !== undefined ? forceOpen : isHidden;
+    if (shouldOpen) {
+        chatContainer.classList.remove("hidden");
+        if (chatInput) chatInput.focus();
+        if (chatToggleBtn) chatToggleBtn.style.background = 'rgba(57,255,20,0.25)';
+    } else {
+        chatContainer.classList.add("hidden");
+        if (chatInput) chatInput.blur();
+        if (chatToggleBtn) chatToggleBtn.style.background = 'rgba(0,0,0,0.7)';
+    }
+}
+
 if (chatToggleBtn && chatContainer) {
-    chatToggleBtn.addEventListener("click", () => {
-        chatContainer.classList.toggle("hidden");
-        if (!chatContainer.classList.contains("hidden")) {
-            chatInput.focus();
+    chatToggleBtn.addEventListener("click", () => toggleChat());
+}
+
+// Close chat on ESC (when chat-input is focused)
+if (chatInput) {
+    chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            toggleChat(false);
         }
     });
 }
@@ -1583,7 +1645,8 @@ function appendChatMessage(sender, text, type) {
     const msgDiv = document.createElement("div");
     msgDiv.classList.add("chat-msg");
     if (type) msgDiv.classList.add(type);
-    msgDiv.innerText = `[${sender}]: ${text}`;
+    const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    msgDiv.innerHTML = `<span style="color:#555;font-size:0.75rem;">${time}</span> <span style="color:${type==='self'?'#39ff14':'#ff6688'};">[${sender}]:</span> ${text}`;
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
