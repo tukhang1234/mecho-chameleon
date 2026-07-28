@@ -1333,6 +1333,7 @@ function sendPlayerState() {
         buffCount:     player.buffCount,
         damageMultiplier: player.damageMultiplier,
         bullets:       player.bullets.map(b => ({ x: b.x, y: b.y, color: b.color, radius: b.radius })),
+        lasers:        player.lasers ? player.lasers.map(l => ({ x: l.x, y: l.y, angle: l.angle, color: l.color, alpha: l.alpha })) : [],
         health:        playerHealth,
         equipped:      player.equipped,
         armsPunchAnimL: player.armsPunchAnimL,
@@ -1341,7 +1342,7 @@ function sendPlayerState() {
     });
 }
 
-// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Co-op HOST: send enemy positions to client (~20fps) ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
+// ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ Co-op HOST: send enemy positions to client (~20fps) ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬Â Ã¢â€šÂ¬
 function sendEnemySync() {
     if (!socket || !socket.connected) return;
     syncFrame++;
@@ -1369,6 +1370,8 @@ function sendEnemySync() {
             color:    e.color,
             damage:   e.damage,
             phase:    e.phase,
+            pulse:    e.pulse,
+            shieldAngle: e.shieldAngle,
             // Boss projectiles
             projectiles: e.isBoss ? (e.projectiles || []).map(p => ({
                 x: p.x, y: p.y, color: p.color, radius: p.radius
@@ -1396,7 +1399,7 @@ function showLobbyScreen(mode) {
 function drawOpponent(ctx) {
     if (!opponentState) return;
     const { x, y, angle, stealthLevel, tongueState, tongueProgress,
-            tongueTargetX, tongueTargetY, buffCount, damageMultiplier, bullets: remoteBullets } = opponentState;
+            tongueTargetX, tongueTargetY, buffCount, damageMultiplier, bullets: remoteBullets, lasers: remoteLasers } = opponentState;
 
     const col   = 'hsl(30, 100%, 55%)'; // Orange for P2
     const alpha = Math.max(0.07, 1 - (stealthLevel || 0));
@@ -1410,6 +1413,21 @@ function drawOpponent(ctx) {
             ctx.arc(b.x, b.y, b.radius || 4, 0, Math.PI * 2);
             ctx.fillStyle = '#ff8800';
             ctx.shadowBlur = 10; ctx.shadowColor = '#ff8800';
+            ctx.fill();
+            ctx.restore();
+    }
+
+    // Draw opponent's lasers
+    if (remoteLasers) {
+        for (const l of remoteLasers) {
+            ctx.save();
+            ctx.globalAlpha = l.alpha || 1;
+            ctx.translate(l.x, l.y);
+            ctx.rotate(l.angle);
+            ctx.beginPath();
+            ctx.rect(0, -6, 2000, 12);
+            ctx.fillStyle = l.color;
+            ctx.shadowBlur = 20; ctx.shadowColor = l.color;
             ctx.fill();
             ctx.restore();
         }
@@ -1500,36 +1518,22 @@ function drawRemoteEnemies(ctx) {
     for (const re of remoteEnemies) {
         if (re.dead) continue;
 
-        const r      = re.radius || 12;
-        const col    = re.hitFlash ? '#ffffff' : (re.color || '#ffee00');
-        const spikes = r === 55 || r > 40 ? (re.isBoss ? 10 : 8) : (r >= 24 ? 6 : 5);
-        const glow   = 10;
+        // Provide dummy variables if missing
+        if (!re.pulse) re.pulse = Math.random() * Math.PI * 2;
+        re.pulse += 0.05;
+        if (!re.shieldAngle) re.shieldAngle = 0;
+        re.shieldAngle += 0.05;
+        if (!re.projectiles) re.projectiles = [];
 
-        ctx.save();
-        ctx.translate(re.x, re.y);
-        if (re.angle !== undefined) ctx.rotate(re.angle);
-
-        // Shape
-        ctx.beginPath();
-        for (let i = 0; i < spikes * 2; i++) {
-            const a   = (i / (spikes * 2)) * Math.PI * 2;
-            const rad = i % 2 === 0 ? r : r * (re.isBoss ? 0.55 : 0.5);
-            const px  = Math.cos(a) * rad;
-            const py  = Math.sin(a) * rad;
-            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        if (re.isBoss) {
+            if (typeof Boss !== 'undefined' && Boss.prototype.draw) {
+                Boss.prototype.draw.call(re, ctx);
+            }
+        } else {
+            if (typeof Enemy !== 'undefined' && Enemy.prototype.draw) {
+                Enemy.prototype.draw.call(re, ctx);
+            }
         }
-        ctx.closePath();
-
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-        if      (r >= 50) { grad.addColorStop(0, '#ff6688'); grad.addColorStop(1, '#880022'); }
-        else if (r >= 24) { grad.addColorStop(0, '#ffaa44'); grad.addColorStop(1, '#883300'); }
-        else               { grad.addColorStop(0, '#ffff66'); grad.addColorStop(1, '#886600'); }
-        ctx.fillStyle = grad;
-        ctx.shadowBlur = glow; ctx.shadowColor = col;
-        ctx.fill();
-        ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
-
-        ctx.restore();
 
         // HP bar (if damaged)
         if (re.hp < re.maxHp) {
