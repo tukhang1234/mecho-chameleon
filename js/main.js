@@ -131,7 +131,7 @@ window.addEventListener('keydown', e => {
     const focused = document.activeElement;
     if (focused && focused.id === 'chat-input') {
         if (e.key === 'Escape') focused.blur();
-        return; // Cho phÃƒÂ©p gÃƒÂµ chÃ¡Â»Â¯ bÃƒÂ¬nh thÃ†Â°Ã¡Â»Âng
+        return; // Cho phÃÆÃÂ©p gÃÆÃÂµ chÃÂ¡ÃÂ»ÃÂ¯ bÃÆÃÂ¬nh thÃâ ÃÂ°ÃÂ¡ÃÂ»ÃÂng
     }
     
     // If a game UI button is focused while playing, forcefully blur it
@@ -155,8 +155,17 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-window.addEventListener('mousedown', e => { if (e.button === 0) mouse.down = true; });
-window.addEventListener('mouseup',   e => { if (e.button === 0) mouse.down = false; });
+window.addEventListener('mousedown', e => { 
+    if (e.button === 0) mouse.down = true; 
+    if (e.button === 2) mouse.rightDown = true; 
+});
+window.addEventListener('mouseup',   e => { 
+    if (e.button === 0) mouse.down = false; 
+    if (e.button === 2) mouse.rightDown = false; 
+});
+window.addEventListener('contextmenu', e => {
+    if (e.target.tagName !== 'INPUT') e.preventDefault();
+});
 
 // ==========================
 // MENU BACKGROUND
@@ -189,16 +198,16 @@ function updateShopUI() {
             if (equippedItems[itemType]) {
                 el.classList.add('equipped');
                 btn.className = 'buy-btn equipped-btn';
-                btn.innerText = 'Ã„ÂÃƒÆ’ TRANG BÃ¡Â»Å ';
+                btn.innerText = 'ĐÃ TRANG BỊ';
             } else {
                 el.classList.remove('equipped');
                 btn.className = 'buy-btn equip-btn';
-                btn.innerText = 'TRANG BÃ¡Â»Å ';
+                btn.innerText = 'TRANG BỊ';
             }
         } else {
             el.classList.remove('equipped');
             btn.className = 'buy-btn';
-            btn.innerText = price + ' Ã°Å¸Âªâ„¢';
+            btn.innerText = price + ' 🪙';
         }
     });
 }
@@ -247,7 +256,7 @@ function initGame() {
     // Multiplayer HUD elements
     if (mpMode) {
         p1Label.classList.remove('hidden');
-        p1Label.innerText = playerIndex === 1 ? 'Ã°Å¸â€˜Â¤ P1 Ã¢â‚¬â€ YOU (HOST)' : 'Ã°Å¸â€˜Â¤ P2 Ã¢â‚¬â€ YOU';
+        p1Label.innerText = playerIndex === 1 ? 'ÃÂ°ÃÂ¸Ã¢â¬ËÃÂ¤ P1 ÃÂ¢Ã¢âÂ¬Ã¢â¬Â YOU (HOST)' : 'ÃÂ°ÃÂ¸Ã¢â¬ËÃÂ¤ P2 ÃÂ¢Ã¢âÂ¬Ã¢â¬Â YOU';
         document.getElementById('chat-toggle-btn').classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
@@ -266,7 +275,7 @@ function initGame() {
     audio.stopMusic();
     audio.startGameMusic();
 
-    // PvP: no enemies, no waves Ã¢â‚¬â€ just players vs each other
+    // PvP: no enemies, no waves ÃÂ¢Ã¢âÂ¬Ã¢â¬Â just players vs each other
     if (mpMode === 'pvp') {
         spawnGear(); spawnGear(); spawnGear();
         // Periodically drop power-ups for PvP
@@ -307,7 +316,7 @@ function startNextWave() {
     waveActive       = true;
 
     showWaveAnnounce(isBossWave
-        ? `Ã¢Å¡Â  WAVE ${waveNumber} Ã¢â‚¬â€ BOSS INCOMING!`
+        ? `ÃÂ¢ÃÂ¡ÃÂ  WAVE ${waveNumber} ÃÂ¢Ã¢âÂ¬Ã¢â¬Â BOSS INCOMING!`
         : `WAVE ${waveNumber}`
     );
 
@@ -388,7 +397,7 @@ function spawnUpgrade() {
 
 function showUpgradeText(text) {
     const notif = document.getElementById('upgrade-notification');
-    notif.innerText = 'Ã¢Å¡â„¢ ' + text;
+    notif.innerText = 'ÃÂ¢ÃÂ¡Ã¢âÂ¢ ' + text;
     notif.classList.remove('hidden');
     const fresh = notif.cloneNode(true);
     notif.parentNode.replaceChild(fresh, notif);
@@ -482,7 +491,7 @@ function checkCollisions() {
         if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
             if (p.isHealthPill) {
                 playerHealth = Math.min(maxPlayerHealth, playerHealth + 40);
-                showUpgradeText('+40 HP HÃ¡Â»â€™I PHÃ¡Â»Â¤C!');
+                showUpgradeText('+40 HP HÃÂ¡ÃÂ»Ã¢â¬â¢I PHÃÂ¡ÃÂ»ÃÂ¤C!');
                 if (audio) audio.playSound('pickup');
             } else {
                 player.applyBuff(p.buffType);
@@ -497,7 +506,7 @@ function checkCollisions() {
         }
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ PvP: tongue/bullet/laser vs OPPONENT Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ PvP: tongue/bullet/laser vs OPPONENT ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
     if (mpMode === 'pvp' && opponentState && socket) {
         const oppR = 18;
 
@@ -539,13 +548,13 @@ function checkCollisions() {
         }
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Co-op CLIENT: hit remote enemies Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Co-op CLIENT: hit remote enemies ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
     if (mpMode === 'coop' && playerIndex === 2 && socket) {
         checkCoopClientCollisions(tip);
         return; // skip normal enemy collisions (client has no local enemies)
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Normal (single-player OR co-op HOST): enemies Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Normal (single-player OR co-op HOST): enemies ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
 
@@ -813,7 +822,7 @@ function update() {
     updateDamageNumbers();
     updateHUD();
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Multiplayer: send state & sync Ã¢â€â‚¬Ã¢â€â‚¬
+    // ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Multiplayer: send state & sync ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
     if (mpMode && socket) {
         sendPlayerState();
         if (mpMode === 'coop' && playerIndex === 1) sendEnemySync();
@@ -859,7 +868,7 @@ function draw() {
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ff003c';
             ctx.shadowBlur = 8; ctx.shadowColor = '#ff003c';
-            ctx.fillText('Ã¢Å¡Â  BOSS WAVE Ã¢Å¡Â ', canvas.width / 2, 50);
+            ctx.fillText('ÃÂ¢ÃÂ¡ÃÂ  BOSS WAVE ÃÂ¢ÃÂ¡ÃÂ ', canvas.width / 2, 50);
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
         }
@@ -937,7 +946,7 @@ playBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     mpMode = null; playerIndex = 0; opponentState = null;
     if (!audio) audio = new AudioSystem();
-    showLoadingScreen('ÄANG Táº¢I TRáº¬N Äáº¤U...', 1000, () => {
+    showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
         initGame();
     });
 });
@@ -1027,7 +1036,7 @@ document.addEventListener('click', (e) => {
             } else {
                 // Not enough coins error
                 e.target.parentElement.classList.add('shake-error');
-                e.target.innerText = 'THIÃ¡ÂºÂ¾U XU!';
+                e.target.innerText = 'THIÃÂ¡ÃÂºÃÂ¾U XU!';
                 setTimeout(() => {
                     e.target.parentElement.classList.remove('shake-error');
                     updateShopUI();
@@ -1058,11 +1067,11 @@ restartBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     if (mpMode && socket) {
         socket.emit('request_restart');
-        e.target.innerText = 'Chá» Ä‘á»‘i thá»§ (1/2)...';
+        e.target.innerText = 'ChÃ¡Â»Â ÃâÃ¡Â»âi thÃ¡Â»Â§ (1/2)...';
     } else {
         gameOverScreen.classList.add('hidden');
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ÄANG Táº¢I Láº I TRáº¬N Äáº¤U...', 1000, () => {
+        showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I LÃ¡ÂºÂ I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
             initGame();
         });
     }
@@ -1079,7 +1088,7 @@ if (exitGameBtn) {
     exitGameBtn.addEventListener('click', (e) => {
         e.target.blur();
         if (gameState === 'playing') {
-            endGame(); // HoÃ¡ÂºÂ·c xÃ¡Â»Â­ lÃƒÂ½ thoÃƒÂ¡t nhanh
+            endGame(); // HoÃÂ¡ÃÂºÃÂ·c xÃÂ¡ÃÂ»ÃÂ­ lÃÆÃÂ½ thoÃÆÃÂ¡t nhanh
             document.getElementById('stats-panel').classList.add('hidden');
             if (socket) socket.emit('player_died');
         }
@@ -1099,11 +1108,11 @@ victoryRestartBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     if (mpMode && socket) {
         socket.emit('request_restart');
-        e.target.innerText = 'Chá» Ä‘á»‘i thá»§ (1/2)...';
+        e.target.innerText = 'ChÃ¡Â»Â ÃâÃ¡Â»âi thÃ¡Â»Â§ (1/2)...';
     } else {
         victoryScr.classList.add('hidden');
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ÄANG Táº¢I Láº I TRáº¬N Äáº¤U...', 1000, () => {
+        showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I LÃ¡ÂºÂ I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
             initGame();
         });
     }
@@ -1125,7 +1134,7 @@ document.addEventListener('click', (e) => {
     if (gameState === 'menu') audio.startMenuMusic();
 });
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Multiplayer buttons Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Multiplayer buttons ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 mpBtn.addEventListener('click', (e) => {
     if (e) e.target.blur();
     if (!audio) audio = new AudioSystem();
@@ -1164,7 +1173,7 @@ cancelLobbyBtn.addEventListener('click', (e) => {
 // MULTIPLAYER FUNCTIONS
 // ==========================
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Connect to server and find a match Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Connect to server and find a match ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 function findMatch(mode) {
     if (!socket) {
         socket = io();
@@ -1177,12 +1186,12 @@ function findMatch(mode) {
 
 function setupSocketListeners() {
     socket.on('waiting', () => {
-        lobbyStatus.innerText = 'Ã¢ÂÂ³ Ã„Âang chÃ¡Â»Â ngÃ†Â°Ã¡Â»Âi chÃ†Â¡i thÃ¡Â»Â© 2...';
+        lobbyStatus.innerText = 'ÃÂ¢ÃÂÃÂ³ ÃâÃÂang chÃÂ¡ÃÂ»ÃÂ ngÃâ ÃÂ°ÃÂ¡ÃÂ»ÃÂi chÃâ ÃÂ¡i thÃÂ¡ÃÂ»ÃÂ© 2...';
     });
 
     socket.on('chatMessage', (text) => {
         if (typeof appendChatMessage === 'function') {
-            appendChatMessage("Ã„ÂÃ¡Â»â€œng Ã„â€˜Ã¡Â»â„¢i", text, "other");
+            appendChatMessage("ÃâÃÂÃÂ¡ÃÂ»Ã¢â¬Ång ÃâÃ¢â¬ËÃÂ¡ÃÂ»Ã¢âÂ¢i", text, "other");
         }
     });
 
@@ -1193,14 +1202,14 @@ function setupSocketListeners() {
         pvpOpponentHealth = 100;
         tongueHitOpp = false;
 
-        const modeLabel = mode === 'coop' ? 'Ã°Å¸Â¤Â CO-OP' : 'Ã¢Å¡â€ PvP';
+        const modeLabel = mode === 'coop' ? 'ÃÂ°ÃÂ¸ÃÂ¤ÃÂ CO-OP' : 'ÃÂ¢ÃÂ¡Ã¢â¬Â PvP';
         const roleLabel = idx === 1 ? 'HOST (P1)' : 'CLIENT (P2)';
-        lobbyStatus.innerText = `Ã¢Å“â€¦ Ã„ÂÃƒÂ£ ghÃƒÂ©p ${modeLabel}! BÃ¡ÂºÂ¡n lÃƒÂ  ${roleLabel}. Ã„Âang bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u...`;
+        lobbyStatus.innerText = `ÃÂ¢ÃâÃ¢â¬Â¦ ÃâÃÂÃÆÃÂ£ ghÃÆÃÂ©p ${modeLabel}! BÃÂ¡ÃÂºÃÂ¡n lÃÆÃÂ  ${roleLabel}. ÃâÃÂang bÃÂ¡ÃÂºÃÂ¯t ÃâÃ¢â¬ËÃÂ¡ÃÂºÃÂ§u...`;
 
         setTimeout(() => {
             lobbyScr.classList.add('hidden');
             if (!audio) audio = new AudioSystem();
-            showLoadingScreen('ÄANG Táº¢I TRáº¬N Äáº¤U...', 1500, () => {
+            showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1500, () => {
                 initGame();
                 if (mpMode === 'pvp') {
                     if (playerIndex === 1) player.x = 200;
@@ -1217,16 +1226,16 @@ function setupSocketListeners() {
 
     socket.on('restart_vote_status', (data) => {
         const btn = gameOverScreen.classList.contains('hidden') ? victoryRestartBtn : restartBtn;
-        if (btn) btn.innerText = `Chá» Ä‘á»‘i thá»§ (${data.votes}/2)...`;
+        if (btn) btn.innerText = `ChÃ¡Â»Â ÃâÃ¡Â»âi thÃ¡Â»Â§ (${data.votes}/2)...`;
     });
 
     socket.on('restart_game', () => {
         gameOverScreen.classList.add('hidden');
         victoryScr.classList.add('hidden');
-        if (restartBtn) restartBtn.innerText = 'CHÆ I Láº I';
-        if (victoryRestartBtn) victoryRestartBtn.innerText = 'CHÆ I Láº I';
+        if (restartBtn) restartBtn.innerText = 'CHÃÂ I LÃ¡ÂºÂ I';
+        if (victoryRestartBtn) victoryRestartBtn.innerText = 'CHÃÂ I LÃ¡ÂºÂ I';
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ÄANG Táº¢I Láº I TRáº¬N Äáº¤U...', 1000, () => {
+        showLoadingScreen('ÃÂANG TÃ¡ÂºÂ¢I LÃ¡ÂºÂ I TRÃ¡ÂºÂ¬N ÃÂÃ¡ÂºÂ¤U...', 1000, () => {
             initGame();
             if (mpMode === 'pvp') {
                 if (playerIndex === 1) player.x = 200;
@@ -1259,7 +1268,7 @@ function setupSocketListeners() {
         if (data.waveAnnounce) showWaveAnnounce(data.waveAnnounce);
     });
 
-    // Co-op HOST: client hit an enemy Ã¢â‚¬â€ apply damage
+    // Co-op HOST: client hit an enemy ÃÂ¢Ã¢âÂ¬Ã¢â¬Â apply damage
     socket.on('client_hit', ({ netId, damage }) => {
         if (mpMode !== 'coop' || playerIndex !== 1) return;
         const e = enemies.find(en => en.netId === netId);
@@ -1282,7 +1291,7 @@ function setupSocketListeners() {
         if (screenShake) screenShake.trigger(5, 8);
     });
 
-    // PvP: opponent died Ã¢â‚¬â€ this player wins!
+    // PvP: opponent died ÃÂ¢Ã¢âÂ¬Ã¢â¬Â this player wins!
     socket.on('opponent_died', () => {
         if (mpMode === 'pvp' && gameState === 'playing') {
             showVictory();
@@ -1292,7 +1301,7 @@ function setupSocketListeners() {
     socket.on('opponent_disconnected', () => {
         if (gameState === 'playing') {
             opponentState = null;
-            showWaveAnnounce('Ã¢Å¡Â  Ã„ÂÃ¡Â»â€˜i thÃ¡Â»Â§ ngÃ¡ÂºÂ¯t kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i!');
+            showWaveAnnounce('ÃÂ¢ÃÂ¡ÃÂ  ÃâÃÂÃÂ¡ÃÂ»Ã¢â¬Ëi thÃÂ¡ÃÂ»ÃÂ§ ngÃÂ¡ÃÂºÃÂ¯t kÃÂ¡ÃÂºÃÂ¿t nÃÂ¡ÃÂ»Ã¢â¬Ëi!');
             setTimeout(() => {
                 if (gameState === 'playing') endGame();
             }, 2500);
@@ -1301,12 +1310,12 @@ function setupSocketListeners() {
 
     socket.on('disconnect', () => {
         if (gameState === 'playing') {
-            showWaveAnnounce('Ã¢Å¡Â  MÃ¡ÂºÂ¥t kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i server!');
+            showWaveAnnounce('ÃÂ¢ÃÂ¡ÃÂ  MÃÂ¡ÃÂºÃÂ¥t kÃÂ¡ÃÂºÃÂ¿t nÃÂ¡ÃÂ»Ã¢â¬Ëi server!');
         }
     });
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Send this player's state to server Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Send this player's state to server ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 function sendPlayerState() {
     if (!socket || !socket.connected || gameState !== 'playing') return;
     socket.emit('player_state', {
@@ -1332,7 +1341,7 @@ function sendPlayerState() {
     });
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Co-op HOST: send enemy positions to client (~20fps) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Co-op HOST: send enemy positions to client (~20fps) ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 function sendEnemySync() {
     if (!socket || !socket.connected) return;
     syncFrame++;
@@ -1369,21 +1378,21 @@ function sendEnemySync() {
     });
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Lobby UI helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Lobby UI helpers ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 function showLobbyScreen(mode) {
     lobbyScr.classList.remove('hidden');
     const tag = lobbyModeLabel;
     if (mode === 'coop') {
-        tag.innerText = 'Ã°Å¸Â¤Â CO-OP';
+        tag.innerText = 'ÃÂ°ÃÂ¸ÃÂ¤ÃÂ CO-OP';
         tag.classList.remove('pvp-tag');
     } else {
-        tag.innerText = 'Ã¢Å¡â€ PvP';
+        tag.innerText = 'ÃÂ¢ÃÂ¡Ã¢â¬Â PvP';
         tag.classList.add('pvp-tag');
     }
-    lobbyStatus.innerText = 'Ã°Å¸â€â€ž Ã„Âang kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i server...';
+    lobbyStatus.innerText = 'ÃÂ°ÃÂ¸Ã¢â¬ÂÃ¢â¬Å¾ ÃâÃÂang kÃÂ¡ÃÂºÃÂ¿t nÃÂ¡ÃÂ»Ã¢â¬Ëi server...';
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Draw remote player (opponent) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Draw remote player (opponent) ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 function drawOpponent(ctx) {
     if (!opponentState) return;
     const { x, y, angle, stealthLevel, tongueState, tongueProgress,
@@ -1473,7 +1482,7 @@ function drawOpponent(ctx) {
     ctx.font = 'bold 10px Orbitron, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffaa44'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff8800';
-    ctx.fillText(mpMode === 'pvp' ? 'Ã¢Å¡â€ ENEMY' : 'Ã°Å¸Â¤Â P2', x, y - radius - 14);
+    ctx.fillText(mpMode === 'pvp' ? 'ÃÂ¢ÃÂ¡Ã¢â¬Â ENEMY' : 'ÃÂ°ÃÂ¸ÃÂ¤ÃÂ P2', x, y - radius - 14);
 
     // Buff indicator
     if (buffCount > 0) {
@@ -1486,7 +1495,7 @@ function drawOpponent(ctx) {
     ctx.restore();
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Draw remote enemies (co-op client) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ Draw remote enemies (co-op client) ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬ÃÂ¢Ã¢â¬ÂÃ¢âÂ¬
 function drawRemoteEnemies(ctx) {
     for (const re of remoteEnemies) {
         if (re.dead) continue;
@@ -1583,7 +1592,7 @@ if (chatSendBtn && chatInput) {
         const text = chatInput.value.trim();
         if (text && socket) {
             socket.emit("chatMessage", text);
-            appendChatMessage("B?n", text, "self");
+            appendChatMessage("Bạn", text, "self");
             chatInput.value = "";
         }
     };
@@ -1638,3 +1647,4 @@ function showCountdownScreen(callback) {
         }
     }, 1000);
 }
+window.addEventListener('contextmenu', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); });

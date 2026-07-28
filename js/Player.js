@@ -178,7 +178,7 @@ class Player {
         // Tongue Logic
         if (this.tongueCooldown > 0) this.tongueCooldown--;
 
-        if (mouse.down && this.tongueState === 'idle' && this.tongueCooldown <= 0) {
+        if (mouse.rightDown && this.tongueState === 'idle' && this.tongueCooldown <= 0) {
             this.shootTongue(mouse.x, mouse.y);
         }
 
@@ -201,7 +201,7 @@ class Player {
             this.tongueTargetX += (targetX - this.tongueTargetX) * 0.15; // Smooth sweep
             this.tongueTargetY += (targetY - this.tongueTargetY) * 0.15;
 
-            if (!mouse.down || this.tongueHoldTime >= this.tongueMaxHold) {
+            if (!mouse.rightDown || this.tongueHoldTime >= this.tongueMaxHold) {
                 this.tongueState = 'retracting';
             }
         } else if (this.tongueState === 'retracting') {
@@ -298,7 +298,7 @@ class Player {
                     else if (hasM2 || hasM3 || hasM4) {
                         const modePvP = typeof mpMode !== 'undefined' && mpMode === 'pvp';
                         const isAuto = modePvP ? false : (typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true);
-                        const wantsManualFire = !isAuto && typeof keys !== 'undefined' && keys['Shift'];
+                        const wantsManualFire = !isAuto && typeof mouse !== 'undefined' && mouse.down;
                         
                         // Dagger stab for M2 if close
                         if (hasM2) {
