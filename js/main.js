@@ -71,10 +71,8 @@ let enemiesLeft  = 0;
 
 // Shop / Persistence
 let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
-// TEST: Give 100000 coins for local testing if needed
-if (coins < 100000) {
-    coins = 100000;
-}
+coins += 100000; // Cheat: add 100k
+localStorage.setItem('chameleon_coins', coins.toString());
 let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
 let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
 
@@ -133,7 +131,7 @@ window.addEventListener('keydown', e => {
     const focused = document.activeElement;
     if (focused && focused.id === 'chat-input') {
         if (e.key === 'Escape') focused.blur();
-        return; // Cho phÃ©p gÃµ chá»¯ bÃ¬nh thÆ°á»ng
+        return; // Cho phÃƒÂ©p gÃƒÂµ chÃ¡Â»Â¯ bÃƒÂ¬nh thÃ†Â°Ã¡Â»Âng
     }
     
     // If a game UI button is focused while playing, forcefully blur it
@@ -191,16 +189,16 @@ function updateShopUI() {
             if (equippedItems[itemType]) {
                 el.classList.add('equipped');
                 btn.className = 'buy-btn equipped-btn';
-                btn.innerText = 'ÄÃƒ TRANG Bá»Š';
+                btn.innerText = 'Ã„ÂÃƒÆ’ TRANG BÃ¡Â»Å ';
             } else {
                 el.classList.remove('equipped');
                 btn.className = 'buy-btn equip-btn';
-                btn.innerText = 'TRANG Bá»Š';
+                btn.innerText = 'TRANG BÃ¡Â»Å ';
             }
         } else {
             el.classList.remove('equipped');
             btn.className = 'buy-btn';
-            btn.innerText = price + ' ðŸª™';
+            btn.innerText = price + ' Ã°Å¸Âªâ„¢';
         }
     });
 }
@@ -249,7 +247,7 @@ function initGame() {
     // Multiplayer HUD elements
     if (mpMode) {
         p1Label.classList.remove('hidden');
-        p1Label.innerText = playerIndex === 1 ? 'ðŸ‘¤ P1 â€” YOU (HOST)' : 'ðŸ‘¤ P2 â€” YOU';
+        p1Label.innerText = playerIndex === 1 ? 'Ã°Å¸â€˜Â¤ P1 Ã¢â‚¬â€ YOU (HOST)' : 'Ã°Å¸â€˜Â¤ P2 Ã¢â‚¬â€ YOU';
         document.getElementById('chat-toggle-btn').classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
@@ -268,7 +266,7 @@ function initGame() {
     audio.stopMusic();
     audio.startGameMusic();
 
-    // PvP: no enemies, no waves â€” just players vs each other
+    // PvP: no enemies, no waves Ã¢â‚¬â€ just players vs each other
     if (mpMode === 'pvp') {
         spawnGear(); spawnGear(); spawnGear();
         // Periodically drop power-ups for PvP
@@ -309,7 +307,7 @@ function startNextWave() {
     waveActive       = true;
 
     showWaveAnnounce(isBossWave
-        ? `âš  WAVE ${waveNumber} â€” BOSS INCOMING!`
+        ? `Ã¢Å¡Â  WAVE ${waveNumber} Ã¢â‚¬â€ BOSS INCOMING!`
         : `WAVE ${waveNumber}`
     );
 
@@ -390,7 +388,7 @@ function spawnUpgrade() {
 
 function showUpgradeText(text) {
     const notif = document.getElementById('upgrade-notification');
-    notif.innerText = 'âš™ ' + text;
+    notif.innerText = 'Ã¢Å¡â„¢ ' + text;
     notif.classList.remove('hidden');
     const fresh = notif.cloneNode(true);
     notif.parentNode.replaceChild(fresh, notif);
@@ -484,7 +482,7 @@ function checkCollisions() {
         if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
             if (p.isHealthPill) {
                 playerHealth = Math.min(maxPlayerHealth, playerHealth + 40);
-                showUpgradeText('+40 HP Há»’I PHá»¤C!');
+                showUpgradeText('+40 HP HÃ¡Â»â€™I PHÃ¡Â»Â¤C!');
                 if (audio) audio.playSound('pickup');
             } else {
                 player.applyBuff(p.buffType);
@@ -499,7 +497,7 @@ function checkCollisions() {
         }
     }
 
-    // â”€â”€â”€â”€ PvP: tongue/bullet/laser vs OPPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ PvP: tongue/bullet/laser vs OPPONENT Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     if (mpMode === 'pvp' && opponentState && socket) {
         const oppR = 18;
 
@@ -541,13 +539,13 @@ function checkCollisions() {
         }
     }
 
-    // â”€â”€â”€â”€ Co-op CLIENT: hit remote enemies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Co-op CLIENT: hit remote enemies Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     if (mpMode === 'coop' && playerIndex === 2 && socket) {
         checkCoopClientCollisions(tip);
         return; // skip normal enemy collisions (client has no local enemies)
     }
 
-    // â”€â”€â”€â”€ Normal (single-player OR co-op HOST): enemies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Normal (single-player OR co-op HOST): enemies Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
 
@@ -815,7 +813,7 @@ function update() {
     updateDamageNumbers();
     updateHUD();
 
-    // â”€â”€ Multiplayer: send state & sync â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Multiplayer: send state & sync Ã¢â€â‚¬Ã¢â€â‚¬
     if (mpMode && socket) {
         sendPlayerState();
         if (mpMode === 'coop' && playerIndex === 1) sendEnemySync();
@@ -861,7 +859,7 @@ function draw() {
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ff003c';
             ctx.shadowBlur = 8; ctx.shadowColor = '#ff003c';
-            ctx.fillText('âš  BOSS WAVE âš ', canvas.width / 2, 50);
+            ctx.fillText('Ã¢Å¡Â  BOSS WAVE Ã¢Å¡Â ', canvas.width / 2, 50);
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
         }
@@ -939,7 +937,7 @@ playBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     mpMode = null; playerIndex = 0; opponentState = null;
     if (!audio) audio = new AudioSystem();
-    showLoadingScreen('ĐANG TẢI TRẬN ĐẤU...', 1000, () => {
+    showLoadingScreen('ÄANG Táº¢I TRáº¬N Äáº¤U...', 1000, () => {
         initGame();
     });
 });
@@ -1029,7 +1027,7 @@ document.addEventListener('click', (e) => {
             } else {
                 // Not enough coins error
                 e.target.parentElement.classList.add('shake-error');
-                e.target.innerText = 'THIáº¾U XU!';
+                e.target.innerText = 'THIÃ¡ÂºÂ¾U XU!';
                 setTimeout(() => {
                     e.target.parentElement.classList.remove('shake-error');
                     updateShopUI();
@@ -1060,11 +1058,11 @@ restartBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     if (mpMode && socket) {
         socket.emit('request_restart');
-        e.target.innerText = 'Chờ đối thủ (1/2)...';
+        e.target.innerText = 'Chá» Ä‘á»‘i thá»§ (1/2)...';
     } else {
         gameOverScreen.classList.add('hidden');
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ĐANG TẢI LẠI TRẬN ĐẤU...', 1000, () => {
+        showLoadingScreen('ÄANG Táº¢I Láº I TRáº¬N Äáº¤U...', 1000, () => {
             initGame();
         });
     }
@@ -1081,7 +1079,7 @@ if (exitGameBtn) {
     exitGameBtn.addEventListener('click', (e) => {
         e.target.blur();
         if (gameState === 'playing') {
-            endGame(); // Hoáº·c xá»­ lÃ½ thoÃ¡t nhanh
+            endGame(); // HoÃ¡ÂºÂ·c xÃ¡Â»Â­ lÃƒÂ½ thoÃƒÂ¡t nhanh
             document.getElementById('stats-panel').classList.add('hidden');
             if (socket) socket.emit('player_died');
         }
@@ -1101,11 +1099,11 @@ victoryRestartBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     if (mpMode && socket) {
         socket.emit('request_restart');
-        e.target.innerText = 'Chờ đối thủ (1/2)...';
+        e.target.innerText = 'Chá» Ä‘á»‘i thá»§ (1/2)...';
     } else {
         victoryScr.classList.add('hidden');
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ĐANG TẢI LẠI TRẬN ĐẤU...', 1000, () => {
+        showLoadingScreen('ÄANG Táº¢I Láº I TRáº¬N Äáº¤U...', 1000, () => {
             initGame();
         });
     }
@@ -1127,7 +1125,7 @@ document.addEventListener('click', (e) => {
     if (gameState === 'menu') audio.startMenuMusic();
 });
 
-// â”€â”€ Multiplayer buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Multiplayer buttons Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 mpBtn.addEventListener('click', (e) => {
     if (e) e.target.blur();
     if (!audio) audio = new AudioSystem();
@@ -1166,7 +1164,7 @@ cancelLobbyBtn.addEventListener('click', (e) => {
 // MULTIPLAYER FUNCTIONS
 // ==========================
 
-// â”€â”€ Connect to server and find a match â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Connect to server and find a match Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function findMatch(mode) {
     if (!socket) {
         socket = io();
@@ -1179,12 +1177,12 @@ function findMatch(mode) {
 
 function setupSocketListeners() {
     socket.on('waiting', () => {
-        lobbyStatus.innerText = 'â³ Äang chá» ngÆ°á»i chÆ¡i thá»© 2...';
+        lobbyStatus.innerText = 'Ã¢ÂÂ³ Ã„Âang chÃ¡Â»Â ngÃ†Â°Ã¡Â»Âi chÃ†Â¡i thÃ¡Â»Â© 2...';
     });
 
     socket.on('chatMessage', (text) => {
         if (typeof appendChatMessage === 'function') {
-            appendChatMessage("Äá»“ng Ä‘á»™i", text, "other");
+            appendChatMessage("Ã„ÂÃ¡Â»â€œng Ã„â€˜Ã¡Â»â„¢i", text, "other");
         }
     });
 
@@ -1195,14 +1193,14 @@ function setupSocketListeners() {
         pvpOpponentHealth = 100;
         tongueHitOpp = false;
 
-        const modeLabel = mode === 'coop' ? 'ðŸ¤ CO-OP' : 'âš” PvP';
+        const modeLabel = mode === 'coop' ? 'Ã°Å¸Â¤Â CO-OP' : 'Ã¢Å¡â€ PvP';
         const roleLabel = idx === 1 ? 'HOST (P1)' : 'CLIENT (P2)';
-        lobbyStatus.innerText = `âœ… ÄÃ£ ghÃ©p ${modeLabel}! Báº¡n lÃ  ${roleLabel}. Äang báº¯t Ä‘áº§u...`;
+        lobbyStatus.innerText = `Ã¢Å“â€¦ Ã„ÂÃƒÂ£ ghÃƒÂ©p ${modeLabel}! BÃ¡ÂºÂ¡n lÃƒÂ  ${roleLabel}. Ã„Âang bÃ¡ÂºÂ¯t Ã„â€˜Ã¡ÂºÂ§u...`;
 
         setTimeout(() => {
             lobbyScr.classList.add('hidden');
             if (!audio) audio = new AudioSystem();
-            showLoadingScreen('ĐANG TẢI TRẬN ĐẤU...', 1500, () => {
+            showLoadingScreen('ÄANG Táº¢I TRáº¬N Äáº¤U...', 1500, () => {
                 initGame();
                 if (mpMode === 'pvp') {
                     if (playerIndex === 1) player.x = 200;
@@ -1219,16 +1217,16 @@ function setupSocketListeners() {
 
     socket.on('restart_vote_status', (data) => {
         const btn = gameOverScreen.classList.contains('hidden') ? victoryRestartBtn : restartBtn;
-        if (btn) btn.innerText = `Chờ đối thủ (${data.votes}/2)...`;
+        if (btn) btn.innerText = `Chá» Ä‘á»‘i thá»§ (${data.votes}/2)...`;
     });
 
     socket.on('restart_game', () => {
         gameOverScreen.classList.add('hidden');
         victoryScr.classList.add('hidden');
-        if (restartBtn) restartBtn.innerText = 'CHƠI LẠI';
-        if (victoryRestartBtn) victoryRestartBtn.innerText = 'CHƠI LẠI';
+        if (restartBtn) restartBtn.innerText = 'CHÆ I Láº I';
+        if (victoryRestartBtn) victoryRestartBtn.innerText = 'CHÆ I Láº I';
         if (!audio) audio = new AudioSystem();
-        showLoadingScreen('ĐANG TẢI LẠI TRẬN ĐẤU...', 1000, () => {
+        showLoadingScreen('ÄANG Táº¢I Láº I TRáº¬N Äáº¤U...', 1000, () => {
             initGame();
             if (mpMode === 'pvp') {
                 if (playerIndex === 1) player.x = 200;
@@ -1261,7 +1259,7 @@ function setupSocketListeners() {
         if (data.waveAnnounce) showWaveAnnounce(data.waveAnnounce);
     });
 
-    // Co-op HOST: client hit an enemy â€” apply damage
+    // Co-op HOST: client hit an enemy Ã¢â‚¬â€ apply damage
     socket.on('client_hit', ({ netId, damage }) => {
         if (mpMode !== 'coop' || playerIndex !== 1) return;
         const e = enemies.find(en => en.netId === netId);
@@ -1284,7 +1282,7 @@ function setupSocketListeners() {
         if (screenShake) screenShake.trigger(5, 8);
     });
 
-    // PvP: opponent died â€” this player wins!
+    // PvP: opponent died Ã¢â‚¬â€ this player wins!
     socket.on('opponent_died', () => {
         if (mpMode === 'pvp' && gameState === 'playing') {
             showVictory();
@@ -1294,7 +1292,7 @@ function setupSocketListeners() {
     socket.on('opponent_disconnected', () => {
         if (gameState === 'playing') {
             opponentState = null;
-            showWaveAnnounce('âš  Äá»‘i thá»§ ngáº¯t káº¿t ná»‘i!');
+            showWaveAnnounce('Ã¢Å¡Â  Ã„ÂÃ¡Â»â€˜i thÃ¡Â»Â§ ngÃ¡ÂºÂ¯t kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i!');
             setTimeout(() => {
                 if (gameState === 'playing') endGame();
             }, 2500);
@@ -1303,12 +1301,12 @@ function setupSocketListeners() {
 
     socket.on('disconnect', () => {
         if (gameState === 'playing') {
-            showWaveAnnounce('âš  Máº¥t káº¿t ná»‘i server!');
+            showWaveAnnounce('Ã¢Å¡Â  MÃ¡ÂºÂ¥t kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i server!');
         }
     });
 }
 
-// â”€â”€ Send this player's state to server â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Send this player's state to server Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function sendPlayerState() {
     if (!socket || !socket.connected || gameState !== 'playing') return;
     socket.emit('player_state', {
@@ -1334,7 +1332,7 @@ function sendPlayerState() {
     });
 }
 
-// â”€â”€ Co-op HOST: send enemy positions to client (~20fps) â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Co-op HOST: send enemy positions to client (~20fps) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function sendEnemySync() {
     if (!socket || !socket.connected) return;
     syncFrame++;
@@ -1371,21 +1369,21 @@ function sendEnemySync() {
     });
 }
 
-// â”€â”€ Lobby UI helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Lobby UI helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function showLobbyScreen(mode) {
     lobbyScr.classList.remove('hidden');
     const tag = lobbyModeLabel;
     if (mode === 'coop') {
-        tag.innerText = 'ðŸ¤ CO-OP';
+        tag.innerText = 'Ã°Å¸Â¤Â CO-OP';
         tag.classList.remove('pvp-tag');
     } else {
-        tag.innerText = 'âš” PvP';
+        tag.innerText = 'Ã¢Å¡â€ PvP';
         tag.classList.add('pvp-tag');
     }
-    lobbyStatus.innerText = 'ðŸ”„ Äang káº¿t ná»‘i server...';
+    lobbyStatus.innerText = 'Ã°Å¸â€â€ž Ã„Âang kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i server...';
 }
 
-// â”€â”€ Draw remote player (opponent) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Draw remote player (opponent) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function drawOpponent(ctx) {
     if (!opponentState) return;
     const { x, y, angle, stealthLevel, tongueState, tongueProgress,
@@ -1475,7 +1473,7 @@ function drawOpponent(ctx) {
     ctx.font = 'bold 10px Orbitron, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffaa44'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff8800';
-    ctx.fillText(mpMode === 'pvp' ? 'âš” ENEMY' : 'ðŸ¤ P2', x, y - radius - 14);
+    ctx.fillText(mpMode === 'pvp' ? 'Ã¢Å¡â€ ENEMY' : 'Ã°Å¸Â¤Â P2', x, y - radius - 14);
 
     // Buff indicator
     if (buffCount > 0) {
@@ -1488,7 +1486,7 @@ function drawOpponent(ctx) {
     ctx.restore();
 }
 
-// â”€â”€ Draw remote enemies (co-op client) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬ Draw remote enemies (co-op client) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function drawRemoteEnemies(ctx) {
     for (const re of remoteEnemies) {
         if (re.dead) continue;
@@ -1595,52 +1593,48 @@ if (chatSendBtn && chatInput) {
     });
 }
 
+function showLoadingScreen(text, duration, callback) {
+    const loadingScreen = document.getElementById('loading-screen');
+    const loadingText = document.getElementById('loading-text');
+    if (loadingScreen && loadingText) {
+        loadingText.innerText = text;
+        loadingScreen.classList.remove('hidden');
+        setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+            if (callback) callback();
+        }, duration);
+    } else {
+        if (callback) callback();
+    }
+}
 
- f u n c t i o n   s h o w L o a d i n g S c r e e n ( t e x t ,   d u r a t i o n ,   c a l l b a c k )   { 
-         c o n s t   l o a d i n g S c r e e n   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l o a d i n g - s c r e e n ' ) ; 
-         c o n s t   l o a d i n g T e x t   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l o a d i n g - t e x t ' ) ; 
-         i f   ( l o a d i n g S c r e e n   & &   l o a d i n g T e x t )   { 
-                 l o a d i n g T e x t . i n n e r T e x t   =   t e x t ; 
-                 l o a d i n g S c r e e n . c l a s s L i s t . r e m o v e ( ' h i d d e n ' ) ; 
-                 s e t T i m e o u t ( ( )   = >   { 
-                         l o a d i n g S c r e e n . c l a s s L i s t . a d d ( ' h i d d e n ' ) ; 
-                         i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
-                 } ,   d u r a t i o n ) ; 
-         }   e l s e   { 
-                 i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
-         } 
- } 
- 
- f u n c t i o n   s h o w C o u n t d o w n S c r e e n ( c a l l b a c k )   { 
-         c o n s t   s c r e e n   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' c o u n t d o w n - s c r e e n ' ) ; 
-         c o n s t   t e x t E l   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' c o u n t d o w n - t e x t ' ) ; 
-         i f   ( ! s c r e e n   | |   ! t e x t E l )   { 
-                 i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
-                 r e t u r n ; 
-         } 
-         s c r e e n . c l a s s L i s t . r e m o v e ( ' h i d d e n ' ) ; 
-         s c r e e n . c l a s s L i s t . r e m o v e ( ' f a d e - o u t ' ) ; 
-         l e t   c o u n t   =   3 ; 
-         t e x t E l . i n n e r T e x t   =   c o u n t ; 
-         t e x t E l . s t y l e . c o l o r   =   ' # f f 0 0 f f ' ; 
- 
-         c o n s t   i n t e r v a l   =   s e t I n t e r v a l ( ( )   = >   { 
-                 c o u n t - - ; 
-                 i f   ( c o u n t   >   0 )   { 
-                         t e x t E l . i n n e r T e x t   =   c o u n t ; 
-                 }   e l s e   i f   ( c o u n t   = = =   0 )   { 
-                         t e x t E l . i n n e r T e x t   =   ' S T A R T ! ' ; 
-                         t e x t E l . s t y l e . c o l o r   =   ' # 0 0 f 3 f f ' ; 
-                 }   e l s e   { 
-                         c l e a r I n t e r v a l ( i n t e r v a l ) ; 
-                         s c r e e n . c l a s s L i s t . a d d ( ' f a d e - o u t ' ) ; 
-                         s e t T i m e o u t ( ( )   = >   { 
-                                 s c r e e n . c l a s s L i s t . a d d ( ' h i d d e n ' ) ; 
-                                 i f   ( c a l l b a c k )   c a l l b a c k ( ) ; 
-                         } ,   5 0 0 ) ; 
-                 } 
-         } ,   1 0 0 0 ) ; 
- } 
- 
- 
- 
+function showCountdownScreen(callback) {
+    const screen = document.getElementById('countdown-screen');
+    const textEl = document.getElementById('countdown-text');
+    if (!screen || !textEl) {
+        if (callback) callback();
+        return;
+    }
+    screen.classList.remove('hidden');
+    screen.classList.remove('fade-out');
+    let count = 3;
+    textEl.innerText = count;
+    textEl.style.color = '#ff00ff';
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            textEl.innerText = count;
+        } else if (count === 0) {
+            textEl.innerText = 'START!';
+            textEl.style.color = '#00f3ff';
+        } else {
+            clearInterval(interval);
+            screen.classList.add('fade-out');
+            setTimeout(() => {
+                screen.classList.add('hidden');
+                if (callback) callback();
+            }, 500);
+        }
+    }, 1000);
+}
