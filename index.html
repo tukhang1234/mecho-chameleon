@@ -364,27 +364,117 @@
             <h1 class="neon-text" id="countdown-text" style="font-size: 10rem; color: #ff00ff; text-shadow: 0 0 40px #ff00ff;">3</h1>
         </div>
 
-        <!-- ====== STATS PANEL ====== -->
-        <div id="stats-panel" class="hidden" style="position: absolute; right: 20px; top: 80px; background: rgba(0,0,0,0.8); border: 2px solid #00f3ff; border-radius: 10px; padding: 15px; color: #fff; z-index: 50; width: 250px; backdrop-filter: blur(5px);">
-            <h2 class="neon-text" style="font-size: 1.2rem; text-align: center; margin-bottom: 10px;">📊 STATS</h2>
-            <div style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 15px;">
-                <p>HP: <span id="stat-hp" style="color: #39ff14;">0/0</span></p>
-                <p>Damage Mult: <span id="stat-dmg" style="color: #ffaa00;">1.0x</span></p>
-                <p>Speed: <span id="stat-spd" style="color: #00f3ff;">0.0</span></p>
-                <p>Arms CD: <span id="stat-cd" style="color: #ff00ff;">0</span></p>
-                <p>Stealth: <span id="stat-stealth" style="color: #aaa;">0%</span></p>
+        <!-- ====== STATS PANEL (C key or button to toggle, all modes) ====== -->
+        <div id="stats-panel" class="hidden" style="
+            position: absolute; right: 20px; top: 70px;
+            background: rgba(0,0,0,0.88);
+            border: 2px solid #00f3ff;
+            border-radius: 14px;
+            padding: 18px 20px;
+            color: #fff;
+            z-index: 50;
+            width: 240px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 25px rgba(0,243,255,0.25);
+        ">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <h2 class="neon-text" style="font-size: 1.1rem; margin:0;">⚡ POWER STATS</h2>
+                <span style="font-size:0.7rem; color:#555; font-family:monospace;">[C] to close</span>
             </div>
-            <button id="exit-game-btn" class="neon-button" style="width: 100%; padding: 8px; font-size: 0.9rem;">🚪 THOÁT</button>
+            <div style="font-size: 0.88rem; line-height: 1.9;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                    <span style="color:#888;">❤️ HP</span>
+                    <span id="stat-hp" style="color: #39ff14; font-weight:bold;">0/0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                    <span style="color:#888;">💥 Damage</span>
+                    <span id="stat-dmg" style="color: #ffaa00; font-weight:bold;">1.0x</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                    <span style="color:#888;">💨 Speed</span>
+                    <span id="stat-spd" style="color: #00f3ff; font-weight:bold;">4.0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                    <span style="color:#888;">🦾 Arms CD</span>
+                    <span id="stat-cd" style="color: #ff00ff; font-weight:bold;">0f</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                    <span style="color:#888;">👁️ Stealth</span>
+                    <span id="stat-stealth" style="color: #aaa; font-weight:bold;">0%</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                    <span style="color:#888;">🏆 Score</span>
+                    <span id="stat-score" style="color: #ffd700; font-weight:bold;">0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#888;">🌊 Wave</span>
+                    <span id="stat-wave" style="color: #ff00ff; font-weight:bold;">1</span>
+                </div>
+            </div>
+            <button id="exit-game-btn" class="neon-button" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top:14px;">🚪 EXIT GAME</button>
         </div>
-        <button id="stats-toggle-btn" class="neon-button hidden" style="position: absolute; right: 20px; top: 20px; z-index: 51; padding: 8px 15px; font-size: 1rem; border-radius: 8px;">📊 Chỉ Số (C)</button>
 
-        <!-- ====== CHAT SYSTEM ====== -->
-        <button id="chat-toggle-btn" class="hidden" style="position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.6); border: 2px solid #00f3ff; border-radius: 50%; width: 50px; height: 50px; color: #00f3ff; font-size: 1.5rem; cursor: pointer; box-shadow: 0 0 10px rgba(0,243,255,0.5);">💬</button>
-        <div id="chat-container" class="hidden" style="position: absolute; bottom: 80px; left: 20px; z-index: 60; width: 300px; height: 250px; background: rgba(0,0,0,0.8); border: 2px solid #00f3ff; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(5px);">
-            <div id="chat-messages" style="flex-grow: 1; padding: 10px; overflow-y: auto; color: #fff; font-size: 0.9rem; display: flex; flex-direction: column; gap: 8px;"></div>
-            <div style="display: flex; padding: 5px; border-top: 1px solid rgba(0,243,255,0.3);">
-                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; background: transparent; border: none; color: #fff; padding: 5px; outline: none; font-family: 'Roboto', sans-serif;">
-                <button id="chat-send-btn" style="background: transparent; border: none; color: #00f3ff; cursor: pointer; font-weight: bold; padding: 0 10px;">Gửi</button>
+        <!-- Stats toggle button: always visible while playing -->
+        <button id="stats-toggle-btn" class="hidden" style="
+            position: absolute; right: 20px; top: 20px;
+            z-index: 51;
+            padding: 7px 14px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.6);
+            border: 1.5px solid #00f3ff;
+            color: #00f3ff;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            box-shadow: 0 0 10px rgba(0,243,255,0.3);
+            transition: all 0.2s;
+        ">📊 STATS [C]</button>
+
+        <!-- ====== CHAT SYSTEM (T key or button to toggle, multiplayer only) ====== -->
+        <!-- Chat toggle button -->
+        <button id="chat-toggle-btn" class="hidden" style="
+            position: absolute; bottom: 20px; left: 20px;
+            z-index: 60;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #39ff14;
+            border-radius: 50%;
+            width: 48px; height: 48px;
+            color: #39ff14;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(57,255,20,0.4);
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        ">💬</button>
+        <!-- Chat key hint -->
+        <div id="chat-key-hint" class="hidden" style="
+            position: absolute; bottom: 75px; left: 20px;
+            z-index: 59;
+            color: rgba(57,255,20,0.6);
+            font-size: 0.68rem;
+            font-family: 'Orbitron', monospace;
+        ">[T] Chat</div>
+        <!-- Chat window -->
+        <div id="chat-container" class="hidden" style="
+            position: absolute; bottom: 80px; left: 20px;
+            z-index: 60;
+            width: 310px; height: 260px;
+            background: rgba(0,0,0,0.88);
+            border: 2px solid #39ff14;
+            border-radius: 12px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 20px rgba(57,255,20,0.2);
+        ">
+            <div style="padding: 8px 12px; background: rgba(57,255,20,0.08); border-bottom: 1px solid rgba(57,255,20,0.2); display:flex; align-items:center; justify-content:space-between;">
+                <span style="color:#39ff14; font-family:'Orbitron',monospace; font-size:0.75rem;">💬 TEAM CHAT</span>
+                <span style="color:#555; font-size:0.65rem; font-family:monospace;">[T] or [ESC] to close</span>
+            </div>
+            <div id="chat-messages" style="flex-grow: 1; padding: 10px; overflow-y: auto; color: #fff; font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px;"></div>
+            <div style="display: flex; padding: 6px 8px; border-top: 1px solid rgba(57,255,20,0.2); background: rgba(0,0,0,0.3);">
+                <input type="text" id="chat-input" placeholder="Nhấn Enter để gửi..." maxlength="80" style="flex-grow: 1; background: transparent; border: none; color: #39ff14; padding: 5px; outline: none; font-family: 'Roboto', sans-serif; font-size: 0.88rem;">
+                <button id="chat-send-btn" style="background: rgba(57,255,20,0.15); border: 1px solid #39ff14; color: #39ff14; cursor: pointer; font-weight: bold; padding: 4px 12px; border-radius: 6px; font-size:0.8rem;">Gửi</button>
             </div>
         </div>
 
