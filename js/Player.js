@@ -33,19 +33,20 @@ class Bullet {
 }
 
 class Laser {
-    constructor(x, y, angle, color, damage) {
+    constructor(x, y, angle, color, damage, widthMult = 1) {
         this.x = x; this.y = y;
         this.angle = angle;
         this.color = color;
         this.damage = damage;
         this.life = 18;
         this.maxLife = 18;
-        this.length = 500;
+        this.length = 800; // Dài hơn để quét sạch bản đồ
+        this.widthMult = widthMult;
     }
     update() { this.life--; }
     draw(ctx) {
         const alpha = this.life / this.maxLife;
-        const w = 3 + (1 - alpha) * 6;
+        const w = (3 + (1 - alpha) * 8) * this.widthMult;
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.beginPath();
@@ -55,7 +56,7 @@ class Laser {
             this.y + Math.sin(this.angle) * this.length
         );
         ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 * this.widthMult;
         ctx.shadowBlur = 0;
         ctx.stroke();
         ctx.beginPath();
@@ -66,7 +67,7 @@ class Laser {
         );
         ctx.strokeStyle = this.color;
         ctx.lineWidth = w;
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 25 * this.widthMult;
         ctx.shadowColor = this.color;
         ctx.stroke();
         ctx.restore();
@@ -88,19 +89,19 @@ class Player {
         this.emergencyStealthActive = false;
 
         // Tongue
-        this.tongueState    = 'idle'; // idle, extending, holding, retracting
+        this.tongueState    = 'idle';
         this.tongueTargetX  = 0;
         this.tongueTargetY  = 0;
         this.tongueProgress = 0;
-        this.tongueSpeed    = 0.12; // faster extend
+        this.tongueSpeed    = 0.12; 
         this.tongueRange    = 280;
-        this.tongueDamage   = 40;   // base damage
+        this.tongueDamage   = 40;   
         this.tongueCooldown = 0;
         this.tongueHoldTime = 0;
-        this.tongueMaxHold  = 40; // max frames to hold it out
-        this.tongueHitList  = new Set(); // store enemies hit in current sweep
+        this.tongueMaxHold  = 40; 
+        this.tongueHitList  = new Set(); 
 
-        // Weapons (acquired via buffs)
+        // Weapons 
         this.hasGun    = false;
         this.hasLaser  = false;
         this.hasMissile = false;
@@ -112,8 +113,8 @@ class Player {
         this.laserCooldown = 0;
         this.missileCooldown = 0;
 
-        // Upgrade stats
-        this.buffCount = 0;   // total buffs received
+        // Stats
+        this.buffCount = 0;   
         this.damageMultiplier = 1.0;
 
         // Visual
@@ -122,13 +123,15 @@ class Player {
         this.eyeX        = 0;
         this.eyeY        = 0;
 
-        this.isGrappling  = false;
-        this.grappleTarget = null;
+        this.armsCooldown = 0;
+        this.armsPunchAnimL = 0;
+        this.armsPunchAnimR = 0;
+        this.armsAngle = 0;
     }
 
     applyBuff(type) {
         this.buffCount++;
-        this.damageMultiplier += 0.15; // every buff boosts damage 15%
+        this.damageMultiplier += 0.15; 
         switch (type) {
             case 'gun':    this.hasGun    = true; break;
             case 'laser':  this.hasLaser  = true; break;
@@ -160,20 +163,17 @@ class Player {
         this.eyeX  = Math.cos(this.angle) * this.radius * 0.4;
         this.eyeY  = Math.sin(this.angle) * this.radius * 0.4;
 
-        // Stealth
         if (keys[' '] && this.stealthCooldown <= 0) {
             this.emergencyStealthActive = true;
             this.stealthCooldown = this.maxStealthCooldown;
         }
-        if (this.stealthCooldown > 0) {
-            this.stealthCooldown--;
-        }
+        if (this.stealthCooldown > 0) this.stealthCooldown--;
         if (this.stealthCooldown <= Math.max(0, this.maxStealthCooldown - 90)) {
             this.emergencyStealthActive = false;
         }
         if (this.emergencyStealthActive)    this.stealthLevel = Math.min(1, this.stealthLevel + 0.12);
-        else if (!this.isMoving)            this.stealthLevel = Math.min(0.35, this.stealthLevel + 0.012); // passive stealth: max 35% fade
-        else                                this.stealthLevel = Math.max(0, this.stealthLevel - 0.08); // fade out quickly when moving
+        else if (!this.isMoving)            this.stealthLevel = Math.min(0.35, this.stealthLevel + 0.012); 
+        else                                this.stealthLevel = Math.max(0, this.stealthLevel - 0.08); 
 
         // Tongue Logic
         if (this.tongueCooldown > 0) this.tongueCooldown--;
@@ -191,42 +191,28 @@ class Player {
             }
         } else if (this.tongueState === 'holding') {
             this.tongueHoldTime++;
-            
-            // Allow sweeping the tongue slightly towards mouse!
             const dx = mouse.x - this.x;
             const dy = mouse.y - this.y;
             const dist = Math.hypot(dx, dy) || 1;
             const targetX = this.x + (dx / dist) * Math.min(dist, this.tongueRange);
             const targetY = this.y + (dy / dist) * Math.min(dist, this.tongueRange);
-            this.tongueTargetX += (targetX - this.tongueTargetX) * 0.15; // Smooth sweep
+            this.tongueTargetX += (targetX - this.tongueTargetX) * 0.15; 
             this.tongueTargetY += (targetY - this.tongueTargetY) * 0.15;
 
             if (!mouse.rightDown || this.tongueHoldTime >= this.tongueMaxHold) {
                 this.tongueState = 'retracting';
             }
         } else if (this.tongueState === 'retracting') {
-            this.tongueProgress -= this.tongueSpeed * 1.5; // retract faster
-            if (this.tongueProgress <= 0) {
-                this.retractTongue();
-            }
+            this.tongueProgress -= this.tongueSpeed * 1.5; 
+            if (this.tongueProgress <= 0) this.retractTongue();
         }
-        
         this.tongueActive = this.tongueState !== 'idle';
 
-        // Auto-fire gun
         if (this.hasGun && this.gunCooldown <= 0) {
             this.gunCooldown = 25;
-            const spd = 9;
-            this.bullets.push(new Bullet(
-                this.x, this.y,
-                Math.cos(this.angle) * spd, Math.sin(this.angle) * spd,
-                '#00f3ff', Math.round(this.finalDamage * 0.4), 4
-            ));
+            this.bullets.push(new Bullet(this.x, this.y, Math.cos(this.angle) * 9, Math.sin(this.angle) * 9, '#00f3ff', Math.round(this.finalDamage * 0.4), 4));
         }
-        if (this.gunCooldown > 0) this.gunCooldown--;
-
         
-        // Auto-fire laser
         if (this.hasLaser && this.laserCooldown <= 0) {
             this.laserCooldown = 60;
             this.lasers.push(new Laser(this.x, this.y, this.angle, '#ff00ff', Math.round(this.finalDamage * 0.7)));
@@ -235,51 +221,144 @@ class Player {
         if (this.hasLaser) this.laserCooldown--;
         if (this.hasMissile) this.missileCooldown--;
         
-        // Robot arms auto-attack & manual attack
+        // ==========================================
+        // COMBAT LOGIC FOR ALL MECHA ARMS (M1 -> M6)
+        // ==========================================
         if (this.equipped) {
             const hasM1 = this.equipped.arms_m1;
             const hasM2 = this.equipped.arms_m2;
             const hasM3 = this.equipped.arms_m3;
             const hasM4 = this.equipped.arms_m4;
+            const hasM5 = this.equipped.arms_m5; // TIER GODLY
+            const hasM6 = this.equipped.arms_m6; // TIER GODLY
             
-            if (hasM1 || hasM2 || hasM3 || hasM4) {
-                if (!this.armsCooldown) this.armsCooldown = 0;
-                
+            if (hasM1 || hasM2 || hasM3 || hasM4 || hasM5 || hasM6) {
                 let targetLeft = null;
                 let targetRight = null;
                 
+                let rangeLeft  = hasM6 ? 450 : (hasM5 ? 450 : (hasM1 ? 240 : (hasM2 ? 180 : 350)));
+                let rangeRight = rangeLeft;
+                
                 if (typeof enemies !== 'undefined' && enemies.length > 0) {
-                    let minDistL = hasM1 ? 240 : (hasM2 ? 180 : 350); 
-                    let minDistR = minDistL;
                     for (const e of enemies) {
                         if (e.dead) continue;
                         const dist = Math.hypot(e.x - this.x, e.y - this.y);
                         if (e.x < this.x) {
-                            if (dist < minDistL) { minDistL = dist; targetLeft = e; }
+                            if (dist < rangeLeft) { rangeLeft = dist; targetLeft = e; }
                         } else {
-                            if (dist < minDistR) { minDistR = dist; targetRight = e; }
+                            if (dist < rangeRight) { rangeRight = dist; targetRight = e; }
                         }
                     }
                 }
                 
-                // Add opponent targeting in PvP
                 if (typeof mpMode !== 'undefined' && mpMode === 'pvp' && typeof opponentState !== 'undefined' && opponentState) {
-                    let minDistL = hasM1 ? 240 : (hasM2 ? 180 : 350); 
-                    let minDistR = minDistL;
                     const dist = Math.hypot(opponentState.x - this.x, opponentState.y - this.y);
                     const e = { x: opponentState.x, y: opponentState.y, isOpponent: true };
                     if (opponentState.x < this.x) {
-                        if (dist < minDistL && (!targetLeft || dist < Math.hypot(targetLeft.x - this.x, targetLeft.y - this.y))) { targetLeft = e; }
+                        if (dist < rangeLeft) targetLeft = e;
                     } else {
-                        if (dist < minDistR && (!targetRight || dist < Math.hypot(targetRight.x - this.x, targetRight.y - this.y))) { targetRight = e; }
+                        if (dist < rangeRight) targetRight = e;
                     }
                 }
                 
-                // Fire logic
                 if (this.armsCooldown <= 0) {
                     let didPunch = false;
-                    
-                    if (hasM1) {
+                    const modePvP = typeof mpMode !== 'undefined' && mpMode === 'pvp';
+                    const isAuto = modePvP ? false : (typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true);
+                    const wantsManualFire = !isAuto && typeof mouse !== 'undefined' && mouse.down;
+                    let anyTarget = targetLeft || targetRight;
+
+                    // ----- GODLY TIER: MODEL 6 (Orbital Funnels) -----
+                    if (hasM6) {
+                        let slashed = false;
+                        if (typeof enemies !== 'undefined') {
+                            for (const e of enemies) {
+                                if (!e.dead && Math.hypot(e.x - this.x, e.y - this.y) < 250) {
+                                    if (e.takeDamage) {
+                                        if (e.takeDamage(120, e.x, e.y).dead && typeof onEnemyDeath !== 'undefined') {
+                                            let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
+                                        }
+                                    }
+                                    slashed = true;
+                                }
+                            }
+                        }
+                        if (anyTarget && anyTarget.isOpponent && Math.hypot(anyTarget.x - this.x, anyTarget.y - this.y) < 250) {
+                            if (typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 90 });
+                            slashed = true;
+                        }
+
+                        if (slashed) {
+                            this.armsPunchAnimL = 15;
+                            this.armsPunchAnimR = 15;
+                            if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
+                            this.armsCooldown = 20; 
+                            this.armsAngle = this.angle;
+                        } 
+                        else if ((isAuto && anyTarget) || wantsManualFire) {
+                            const aimAngle = anyTarget ? Math.atan2(anyTarget.y - this.y, anyTarget.x - this.x) : Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                            const fireAngle = isAuto && anyTarget ? aimAngle : Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                            
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle - 0.3, '#ff0055', 35, 1.2));
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle - 0.1, '#00ffaa', 35, 1.2));
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle + 0.1, '#00ffaa', 35, 1.2));
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle + 0.3, '#ff0055', 35, 1.2));
+                            
+                            this.armsAngle = fireAngle;
+                            this.armsCooldown = 22;
+                            this.armsPunchAnimL = 10;
+                            this.armsPunchAnimR = 10;
+                            if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
+                        } else {
+                            this.armsAngle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                        }
+                    }
+                    // ----- GODLY TIER: MODEL 5 -----
+                    else if (hasM5) {
+                        let slashed = false;
+                        if (typeof enemies !== 'undefined') {
+                            for (const e of enemies) {
+                                if (!e.dead && Math.hypot(e.x - this.x, e.y - this.y) < 220) {
+                                    if (e.takeDamage) {
+                                        if (e.takeDamage(100, e.x, e.y).dead && typeof onEnemyDeath !== 'undefined') {
+                                            let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
+                                        }
+                                    }
+                                    slashed = true;
+                                }
+                            }
+                        }
+                        if (anyTarget && anyTarget.isOpponent && Math.hypot(anyTarget.x - this.x, anyTarget.y - this.y) < 220) {
+                            if (typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 80 });
+                            slashed = true;
+                        }
+
+                        if (slashed) {
+                            this.armsPunchAnimL = 12;
+                            this.armsPunchAnimR = 12;
+                            if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
+                            this.armsCooldown = 15; 
+                            this.armsAngle = this.angle;
+                        } 
+                        else if ((isAuto && anyTarget) || wantsManualFire) {
+                            const aimAngle = anyTarget ? Math.atan2(anyTarget.y - this.y, anyTarget.x - this.x) : Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                            const fireAngle = isAuto && anyTarget ? aimAngle : Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                            
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle, '#ffd700', 40, 2.5));       
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle - 0.25, '#00f3ff', 25, 1.5)); 
+                            this.lasers.push(new Laser(this.x, this.y, fireAngle + 0.25, '#ff00ff', 25, 1.5)); 
+                            
+                            this.armsAngle = fireAngle;
+                            this.armsCooldown = 25;
+                            this.armsPunchAnimL = 8;
+                            this.armsPunchAnimR = 8;
+                            if (typeof audio !== 'undefined' && audio) audio.playSound('shoot');
+                        } else {
+                            this.armsAngle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+                        }
+                    } 
+                    // ----- MODEL 1 -----
+                    else if (hasM1) {
                         if (targetLeft) { 
                             if (targetLeft.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 35 });
                             else if (targetLeft.takeDamage) { if (targetLeft.takeDamage(35, targetLeft.x, targetLeft.y).dead && typeof onEnemyDeath !== 'undefined') { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); } }
@@ -295,12 +374,8 @@ class Player {
                             this.armsCooldown = 40;
                         }
                     } 
+                    // ----- MODEL 2, 3, 4 -----
                     else if (hasM2 || hasM3 || hasM4) {
-                        const modePvP = typeof mpMode !== 'undefined' && mpMode === 'pvp';
-                        const isAuto = modePvP ? false : (typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true);
-                        const wantsManualFire = !isAuto && typeof mouse !== 'undefined' && mouse.down;
-                        
-                        // Dagger stab for M2 if close
                         if (hasM2) {
                             if (targetLeft && Math.hypot(targetLeft.x - this.x, targetLeft.y - this.y) < 180) {
                                 if (targetLeft.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 40 });
@@ -318,8 +393,6 @@ class Player {
                             }
                         }
 
-                        // Shooting
-                        let anyTarget = targetLeft || targetRight;
                         if ((isAuto && anyTarget) || wantsManualFire) {
                             const aimAngle = anyTarget ? Math.atan2(anyTarget.y - this.y, anyTarget.x - this.x) : Math.atan2(mouse.y - this.y, mouse.x - this.x);
                             const fireAngle = isAuto && anyTarget ? aimAngle : Math.atan2(mouse.y - this.y, mouse.x - this.x);
@@ -327,7 +400,6 @@ class Player {
                             const bulletColor = hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : '#00f3ff');
                             
                             if (hasM4) {
-                                // M4: 2 lasers + bullets
                                 this.lasers.push(new Laser(this.x, this.y, fireAngle - 0.2, '#ffaa00', 10));
                                 this.lasers.push(new Laser(this.x, this.y, fireAngle + 0.2, '#ffaa00', 10));
                                 this.bullets.push(new Bullet(this.x, this.y, Math.cos(fireAngle)*12, Math.sin(fireAngle)*12, bulletColor, 20, 6));
@@ -357,19 +429,12 @@ class Player {
         if (this.armsCooldown > 0) this.armsCooldown--;
         if (this.armsPunchAnimL > 0) this.armsPunchAnimL--;
         if (this.armsPunchAnimR > 0) this.armsPunchAnimR--;
-        if (this.armsPunchAnim > 0) this.armsPunchAnim--;
 
-        // Missile (homing)
         if (this.hasMissile && this.missileCooldown <= 0) {
             this.missileCooldown = 90;
-            this.bullets.push(new Bullet(
-                this.x, this.y,
-                Math.cos(this.angle) * 6, Math.sin(this.angle) * 6,
-                '#ff7700', Math.round(this.finalDamage * 0.8), 7
-            ));
+            this.bullets.push(new Bullet(this.x, this.y, Math.cos(this.angle) * 6, Math.sin(this.angle) * 6, '#ff7700', Math.round(this.finalDamage * 0.8), 7));
         }
 
-        // Update bullets / lasers
         for (let i = this.bullets.length - 1; i >= 0; i--) {
             this.bullets[i].update();
             if (this.bullets[i].life <= 0 || this.bullets[i].hit) this.bullets.splice(i, 1);
@@ -414,23 +479,18 @@ class Player {
         const glow  = 12 + Math.sin(this.bodyPulse * 2) * 5;
         
         let hueToUse = this.hue;
-        if (this.equipped && this.equipped.core) {
-            hueToUse = 0; // Red plasma core
-        }
+        if (this.equipped && this.equipped.core) hueToUse = 0; 
         
         const col   = `hsl(${hueToUse}, 100%, 55%)`;
-        const alpha = Math.max(0.25, 1 - this.stealthLevel); // minimum 25% so player always visible
+        const alpha = Math.max(0.25, 1 - this.stealthLevel); 
 
-        // Draw bullets first (behind body)
         this.bullets.forEach(b => b.draw(ctx));
         this.lasers.forEach(l  => l.draw(ctx));
 
-        // Weapon accessories
         if (this.hasGun) this._drawGun(ctx, alpha, col);
         if (this.hasLaser) this._drawLaserOrb(ctx, alpha);
         if (this.hasMissile) this._drawMissilePod(ctx, alpha);
 
-        // Tongue
         if (this.tongueActive) {
             const tip = this.getTipPosition();
             ctx.save();
@@ -446,7 +506,6 @@ class Player {
             ctx.restore();
         }
 
-        // Body
         ctx.save();
         ctx.globalAlpha = alpha;
 
@@ -479,7 +538,6 @@ class Player {
         ctx.fill();
         ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.shadowBlur = 4; ctx.stroke();
 
-        // Circuit lines
         ctx.globalAlpha = alpha * 0.4;
         ctx.strokeStyle = `hsl(${this.hue + 40}, 100%, 80%)`;
         ctx.lineWidth = 1; ctx.shadowBlur = 3; ctx.shadowColor = 'transparent';
@@ -491,7 +549,6 @@ class Player {
             ctx.stroke();
         }
 
-        // Eye
         ctx.globalAlpha = Math.max(0.15, alpha);
         ctx.beginPath();
         ctx.arc(this.x + this.eyeX, this.y + this.eyeY, 5, 0, Math.PI * 2);
@@ -500,7 +557,6 @@ class Player {
         ctx.arc(this.x + this.eyeX, this.y + this.eyeY, 3, 0, Math.PI * 2);
         ctx.fillStyle = '#ff00ff'; ctx.fill();
 
-        // Stealth shimmer
         if (this.stealthLevel > 0.2) {
             ctx.globalAlpha = this.stealthLevel * 0.35;
             ctx.beginPath();
@@ -510,7 +566,6 @@ class Player {
             ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]);
         }
 
-        // Buff indicator (show buff level)
         if (this.buffCount > 0) {
             ctx.globalAlpha = 0.85;
             ctx.font = `bold 9px Orbitron, monospace`;
@@ -521,26 +576,23 @@ class Player {
 
         ctx.restore();
 
-        // Draw Shop Armors & Core effects
         if (this.equipped && this.equipped.armor && this.stealthLevel < 0.5) {
             ctx.save();
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
             ctx.strokeStyle = '#39ff14';
             ctx.lineWidth = 3;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#39ff14';
+            ctx.shadowBlur = 15; ctx.shadowColor = '#39ff14';
             ctx.stroke();
             ctx.restore();
         }
 
-        // Draw Weapons
         if (this.hasGun) this._drawGun(ctx, alpha, col);
         if (this.hasLaser) this._drawLaserOrb(ctx, alpha);
         if (this.hasMissile) this._drawMissilePod(ctx, alpha);
         
-        // Draw Robot Arms
-        if (this.equipped && (this.equipped.arms_m1 || this.equipped.arms_m2 || this.equipped.arms_m3 || this.equipped.arms_m4) && this.stealthLevel < 0.8) {
+        // GỌI HÀM VẼ TAY ROBOT
+        if (this.equipped && (this.equipped.arms_m1 || this.equipped.arms_m2 || this.equipped.arms_m3 || this.equipped.arms_m4 || this.equipped.arms_m5 || this.equipped.arms_m6) && this.stealthLevel < 0.8) {
             this._drawRobotArms(ctx, alpha, col);
         }
     }
@@ -590,7 +642,7 @@ class Player {
     }
 
     // ==========================================
-    // TÂN TRANG CÁNH TAY ROBOT (UPGRADED VISUALS)
+    // ĐỒ HỌA ĐIỆN ẢNH CÁNH TAY ROBOT
     // ==========================================
     _drawRobotArms(ctx, alpha, col) {
         ctx.save();
@@ -601,17 +653,202 @@ class Player {
         const hasM2 = this.equipped.arms_m2;
         const hasM3 = this.equipped.arms_m3;
         const hasM4 = this.equipped.arms_m4;
+        const hasM5 = this.equipped.arms_m5; // TIER GODLY
+        const hasM6 = this.equipped.arms_m6; // TIER GODLY
         
-        // Cấp phát màu sắc theo Model để ngầu hơn
-        let themeColor = hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : (hasM2 ? '#00f3ff' : '#ff003c'));
+        let themeColor = hasM6 ? '#00ffaa' : (hasM5 ? '#ffd700' : (hasM4 ? '#ffaa00' : (hasM3 ? '#ff003c' : (hasM2 ? '#00f3ff' : '#ff003c'))));
         
-        // Base Shoulder positions
+        // ----------------------------------------------------
+        // LOGIC VẼ RIÊNG CHO TIER GODLY (MODEL 6 - ORBITAL FUNNELS)
+        // ----------------------------------------------------
+        if (hasM6) {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            for (let i = 0; i < 4; i++) {
+                const offsetAngle = (i - 1.5) * 0.6; 
+                const isAttacking = (this.armsPunchAnimL > 0 || this.armsPunchAnimR > 0);
+                
+                let targetA, fx, fy;
+                if (isAttacking) {
+                    targetA = this.armsAngle;
+                    const atkOffset = (i - 1.5) * 0.4;
+                    fx = Math.cos(targetA + atkOffset) * 45;
+                    fy = Math.sin(targetA + atkOffset) * 45;
+                } else {
+                    targetA = this.angle;
+                    const hoverDist = 35 + Math.sin(time * 4 + i) * 6;
+                    fx = Math.cos(targetA + Math.PI + offsetAngle) * hoverDist;
+                    fy = Math.sin(targetA + Math.PI + offsetAngle) * hoverDist;
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(fx, fy);
+                ctx.strokeStyle = i % 2 === 0 ? '#ff0055' : '#00ffaa';
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = 0.5;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(fx, fy);
+                ctx.rotate(targetA);
+                ctx.globalAlpha = 1.0;
+                
+                ctx.fillStyle = '#222';
+                ctx.shadowBlur = 5; ctx.shadowColor = '#000';
+                ctx.beginPath();
+                ctx.moveTo(12, 0); ctx.lineTo(-12, -7); ctx.lineTo(-6, 0); ctx.lineTo(-12, 7);
+                ctx.fill();
+
+                ctx.fillStyle = i % 2 === 0 ? '#ff0055' : '#00ffaa';
+                ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+                ctx.beginPath();
+                ctx.moveTo(9, 0); ctx.lineTo(-3, -4); ctx.lineTo(-3, 4);
+                ctx.fill();
+
+                if (isAttacking) {
+                    ctx.beginPath();
+                    ctx.arc(12, 0, 4 + Math.random() * 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowBlur = 20; ctx.shadowColor = '#fff';
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+            
+            if (this.armsPunchAnimL > 5) {
+                ctx.rotate(time * 15);
+                ctx.beginPath();
+                ctx.arc(0, 0, 250, 0, Math.PI * 2);
+                ctx.strokeStyle = '#00ffaa';
+                ctx.lineWidth = 8;
+                ctx.setLineDash([50, 30]);
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff0055';
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+            return;
+        }
+
+        // ----------------------------------------------------
+        // LOGIC VẼ RIÊNG CHO TIER GODLY (MODEL 5)
+        // ----------------------------------------------------
+        if (hasM5) {
+            // 1. Vòng sáng thần thánh (Halo)
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            // Halo Vàng quay theo chiều kim đồng hồ
+            ctx.rotate(time * 0.5);
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 20; ctx.shadowColor = '#ffd700';
+            ctx.setLineDash([20, 15, 5, 15]);
+            ctx.beginPath(); ctx.arc(0, 0, this.radius + 20, 0, Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Halo Tím Hư Không quay ngược lại
+            ctx.rotate(-time * 1.2);
+            ctx.strokeStyle = '#b000ff';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 15; ctx.shadowColor = '#b000ff';
+            ctx.setLineDash([40, 10]);
+            ctx.beginPath(); ctx.arc(0, 0, this.radius + 28, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
+
+            let targetMouseAngle = this.angle;
+            if (typeof mouse !== 'undefined' && mouse) {
+                targetMouseAngle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+            }
+            const leftArmAngle = targetMouseAngle - Math.PI/2.5;
+            const rightArmAngle = targetMouseAngle + Math.PI/2.5;
+
+            // 2. Hàm vẽ cánh tay trôi nổi (Phantom Arms)
+            const drawPhantomArm = (baseX, baseY, targetAngle, index, isLeft) => {
+                const spread = (index - 1) * 0.5; // Các tay xòe ra góc -0.5, 0, 0.5
+                const floatAmp = 35 + Math.sin(time * 3 + index) * 8; // Lơ lửng
+                
+                // Animation chém vọt lên
+                let punchExt = 0;
+                if (isLeft && this.armsPunchAnimL > 0) punchExt = (12 - this.armsPunchAnimL) * 6;
+                if (!isLeft && this.armsPunchAnimR > 0) punchExt = (12 - this.armsPunchAnimR) * 6;
+                
+                // Khi tấn công, các tay chụm lại góc ngắm chung
+                const a = (this.armsPunchAnimL > 0 || this.armsPunchAnimR > 0) ? (this.armsAngle + spread*0.3) : (targetAngle + spread);
+                const armX = baseX + Math.cos(a) * (floatAmp + punchExt);
+                const armY = baseY + Math.sin(a) * (floatAmp + punchExt);
+
+                // Dây năng lượng kết nối (Sét)
+                ctx.beginPath();
+                ctx.moveTo(baseX, baseY);
+                ctx.quadraticCurveTo(
+                    baseX + Math.cos(a) * floatAmp * 0.5,
+                    baseY + Math.sin(a) * floatAmp * 0.5,
+                    armX, armY
+                );
+                ctx.strokeStyle = isLeft ? '#00f3ff' : '#ff00ff';
+                ctx.lineWidth = 2; ctx.globalAlpha = 0.6;
+                ctx.shadowBlur = 15; ctx.shadowColor = ctx.strokeStyle;
+                ctx.stroke();
+
+                // Bàn tay cơ khí dải thiên hà
+                ctx.save();
+                ctx.translate(armX, armY);
+                ctx.rotate(a);
+                ctx.globalAlpha = 1.0;
+                
+                // Móng vuốt
+                ctx.fillStyle = '#111';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.moveTo(-5, -6); ctx.lineTo(14, -3); ctx.lineTo(14, 3); ctx.lineTo(-5, 6); ctx.fill();
+                
+                // Giáp bọc ngoài màu Vàng Thần Thánh
+                ctx.fillStyle = '#ffd700'; 
+                ctx.shadowBlur = 20; ctx.shadowColor = '#ffd700';
+                ctx.beginPath(); ctx.roundRect(-4, -4, 10, 8, 2); ctx.fill();
+
+                // Lõi sáng trắng
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 25; ctx.shadowColor = '#fff';
+                ctx.beginPath(); ctx.arc(2, 0, 2.5, 0, Math.PI*2); ctx.fill();
+
+                // Animation chém quét năng lượng (Crescent Wave)
+                if ((isLeft && this.armsPunchAnimL > 0) || (!isLeft && this.armsPunchAnimR > 0)) {
+                    ctx.fillStyle = isLeft ? '#00f3ff' : '#ff00ff';
+                    ctx.shadowBlur = 30;
+                    ctx.beginPath(); 
+                    ctx.moveTo(14, -10); 
+                    ctx.quadraticCurveTo(50, 0, 14, 10); 
+                    ctx.lineTo(10, 5);
+                    ctx.quadraticCurveTo(30, 0, 10, -5);
+                    ctx.fill();
+                }
+                ctx.restore();
+            };
+
+            // Gọi vẽ 6 tay (3 trái, 3 phải)
+            for(let i=0; i<3; i++) {
+                drawPhantomArm(this.x, this.y, leftArmAngle, i, true);
+                drawPhantomArm(this.x, this.y, rightArmAngle, i, false);
+            }
+            
+            ctx.restore();
+            return; // Dừng lại ở đây cho M5, không chạy code vẽ tay thường bên dưới
+        }
+
+
+        // ----------------------------------------------------
+        // LOGIC VẼ TAY ROBOT CƠ BẢN (M1 -> M4)
+        // ----------------------------------------------------
         let slx = this.x + Math.cos(this.angle - Math.PI/1.5) * (this.radius + 5);
         let sly = this.y + Math.sin(this.angle - Math.PI/1.5) * (this.radius + 5);
         let srx = this.x + Math.cos(this.angle + Math.PI/1.5) * (this.radius + 5);
         let sry = this.y + Math.sin(this.angle + Math.PI/1.5) * (this.radius + 5);
 
-        // Hand positions (default floating)
         let lx = slx + Math.cos(this.angle - Math.PI/2) * 22 + Math.cos(time) * 4;
         let ly = sly + Math.sin(this.angle - Math.PI/2) * 22 + Math.sin(time) * 4;
         
@@ -621,7 +858,6 @@ class Player {
         let leftArmAngle = Math.atan2(ly - sly, lx - slx);
         let rightArmAngle = Math.atan2(ry - sry, rx - srx);
 
-        // Punch animation overrides position if active
         if (this.armsPunchAnimL > 0) {
             const ext = (10 - this.armsPunchAnimL) * 4;
             const a = this.armsAngle || this.angle;
@@ -642,70 +878,52 @@ class Player {
         let erx = srx + Math.cos(rightArmAngle - 0.5) * 14;
         let ery = sry + Math.sin(rightArmAngle - 0.5) * 14;
 
-        // Hàm vẽ từng khớp cánh tay nhiều Layer (Multi-layer arm drawing)
         const drawCyberArm = (startX, startY, midX, midY, endX, endY, color) => {
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
-
-            // Lớp 1: Khung xương chịu lực màu đen (Outer skeleton)
             ctx.strokeStyle = '#111';
             ctx.lineWidth = 7;
             ctx.shadowBlur = 5; ctx.shadowColor = '#000';
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(endX, endY); ctx.stroke();
 
-            // Lớp 2: Vỏ giáp kim loại xám (Armor plating)
             ctx.strokeStyle = '#555';
             ctx.lineWidth = 4;
             ctx.shadowBlur = 0;
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(endX, endY); ctx.stroke();
 
-            // Lớp 3: Cáp năng lượng phát sáng lõi trong (Glowing power cables)
             ctx.strokeStyle = color;
             ctx.lineWidth = 1.5;
             ctx.shadowBlur = 8; ctx.shadowColor = color;
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(midX, midY); ctx.lineTo(endX, endY); ctx.stroke();
 
-            // Lớp 4: Các chốt xoay (Pivots/Joints)
             ctx.fillStyle = '#222';
             ctx.strokeStyle = '#777';
             ctx.lineWidth = 1.5;
             ctx.shadowBlur = 0;
             [ [startX, startY, 6], [midX, midY, 5], [endX, endY, 5] ].forEach(([jx, jy, jr]) => {
                 ctx.beginPath(); ctx.arc(jx, jy, jr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                // Chấm sáng giữa khớp (Glowing core)
                 ctx.fillStyle = color; ctx.shadowBlur = 6; ctx.shadowColor = color;
                 ctx.beginPath(); ctx.arc(jx, jy, 2, 0, Math.PI * 2); ctx.fill();
                 ctx.shadowBlur = 0;
             });
         };
 
-        // Vẽ 2 cánh tay chính
         drawCyberArm(slx, sly, elx, ely, lx, ly, themeColor);
         drawCyberArm(srx, sry, erx, ery, rx, ry, themeColor);
 
-        // ==========================
-        // VŨ KHÍ NÂNG CẤP (WEAPONS)
-        // ==========================
         ctx.fillStyle = '#222';
         ctx.strokeStyle = themeColor;
         ctx.lineWidth = 2;
         ctx.shadowBlur = 10; ctx.shadowColor = themeColor;
         
         if (hasM1) {
-            // M1: Găng tay Mecha Brawler cực ngầu (High-tech Gorilla Fists)
             const drawFist = (fx, fy, fAngle) => {
                 ctx.save();
                 ctx.translate(fx, fy); ctx.rotate(fAngle);
-                
-                // Khối găng tay chính
                 ctx.fillStyle = '#2b2b2b'; ctx.shadowBlur = 5; ctx.shadowColor = '#000';
                 ctx.beginPath(); ctx.roundRect(-8, -10, 20, 20, 4); ctx.fill();
-                
-                // Tấm đệm giáp (Knuckle Plate) đỏ rực
                 ctx.fillStyle = '#ff003c'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff003c';
                 ctx.beginPath(); ctx.roundRect(4, -8, 10, 16, 2); ctx.fill();
-                
-                // Lõi năng lượng (Power Core) chớp nháy trên găng
                 ctx.fillStyle = '#fff'; ctx.shadowBlur = 10;
                 ctx.beginPath(); ctx.arc(9, 0, 3, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
@@ -714,42 +932,32 @@ class Player {
             drawFist(rx, ry, rightArmAngle);
         } 
         else if (hasM2) {
-            // M2: Kiếm chớp (Plasma Blade) tay trái + Cyber Blaster tay phải
-            
-            // Kiếm chớp tay trái (Plasma Blade)
             ctx.save();
             ctx.translate(lx, ly); ctx.rotate(leftArmAngle);
-            // Chuôi kiếm (Hilt)
             ctx.fillStyle = '#333'; ctx.shadowBlur = 0;
             ctx.fillRect(0, -4, 12, 8);
-            // Lưỡi kiếm năng lượng
             ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f3ff';
             ctx.beginPath(); ctx.moveTo(10, -2); ctx.lineTo(35, 0); ctx.lineTo(10, 2); ctx.fill();
-            // Lõi kiếm
             ctx.fillStyle = '#00f3ff'; ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(10, -4); ctx.lineTo(38, 0); ctx.lineTo(10, 4); ctx.fill();
             ctx.restore();
             
-            // Súng Cyber tay phải (Cyber Blaster)
             ctx.save();
             ctx.translate(rx, ry); ctx.rotate(rightArmAngle);
             ctx.fillStyle = '#444'; ctx.shadowBlur = 2; ctx.shadowColor = '#000';
-            ctx.fillRect(-2, -5, 18, 10); // Gun body
-            // Nòng súng phát sáng
+            ctx.fillRect(-2, -5, 18, 10); 
             ctx.fillStyle = '#00f3ff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f3ff';
-            ctx.fillRect(16, -3, 6, 6); // Energy nozzle
+            ctx.fillRect(16, -3, 6, 6); 
             ctx.fillStyle = '#fff';
-            ctx.fillRect(18, -1, 4, 2); // White hot center
+            ctx.fillRect(18, -1, 4, 2); 
             ctx.restore();
         }
         else if (hasM3 || hasM4) {
-            // M3 & M4 dùng chung mô hình súng bắn tỉa ở tay
             const drawBlaster = (gx, gy, gAngle, color) => {
                 ctx.save();
                 ctx.translate(gx, gy); ctx.rotate(gAngle);
                 ctx.fillStyle = '#333'; ctx.shadowBlur = 3; ctx.shadowColor = '#000';
                 ctx.fillRect(-4, -4, 16, 8);
-                // Nòng súng kép
                 ctx.fillStyle = color; ctx.shadowBlur = 12; ctx.shadowColor = color;
                 ctx.fillRect(12, -3, 5, 2);
                 ctx.fillRect(12, 1, 5, 2);
@@ -758,7 +966,6 @@ class Player {
             drawBlaster(lx, ly, leftArmAngle, themeColor);
             drawBlaster(rx, ry, rightArmAngle, themeColor);
 
-            // Giáp tay cho M3 (Armor plating)
             if (hasM3) {
                 ctx.save();
                 ctx.translate(elx, ely); ctx.rotate(leftArmAngle);
@@ -777,9 +984,7 @@ class Player {
                 ctx.restore();
             }
             
-            // Xúc tu cơ khí Doc Ock cho M4 (Supreme 4-Arms)
             if (hasM4) {
-                // Tọa độ gắn ở lưng
                 let xt1 = this.x + Math.cos(this.angle - Math.PI*0.8) * (this.radius - 2);
                 let yt1 = this.y + Math.sin(this.angle - Math.PI*0.8) * (this.radius - 2);
                 let xt2 = this.x + Math.cos(this.angle + Math.PI*0.8) * (this.radius - 2);
@@ -787,7 +992,6 @@ class Player {
 
                 let a = this.armsAngle || this.angle;
                 
-                // Các điểm uốn khúc của xúc tu
                 let midTx1 = xt1 + Math.cos(a - 0.8) * 12;
                 let midTy1 = yt1 + Math.sin(a - 0.8) * 12;
                 let tx1 = midTx1 + Math.cos(a - 0.1) * 18;
@@ -798,24 +1002,19 @@ class Player {
                 let tx2 = midTx2 + Math.cos(a + 0.1) * 18;
                 let ty2 = midTy2 + Math.sin(a + 0.1) * 18;
 
-                // Vẽ xúc tu
                 drawCyberArm(xt1, yt1, midTx1, midTy1, tx1, ty1, '#ffaa00');
                 drawCyberArm(xt2, yt2, midTx2, midTy2, tx2, ty2, '#ffaa00');
 
-                // Pháo Plasma hạng nặng (Heavy Plasma Cannons)
                 const drawCannon = (cx, cy, cAngle) => {
                     ctx.save();
                     ctx.translate(cx, cy); ctx.rotate(cAngle);
                     
-                    // Thân pháo
                     ctx.fillStyle = '#222'; ctx.shadowBlur = 5; ctx.shadowColor = '#000';
                     ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(16, -4); ctx.lineTo(16, 4); ctx.lineTo(-6, 6); ctx.fill();
                     
-                    // Lõi tản nhiệt cam
                     ctx.fillStyle = '#ffaa00'; ctx.shadowBlur = 10; ctx.shadowColor = '#ffaa00';
                     for(let i=0; i<3; i++) ctx.fillRect(2 + i*4, -3, 2, 6);
                     
-                    // Đầu nòng súng
                     ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = '#ffaa00';
                     ctx.fillRect(16, -2, 6, 4);
                     

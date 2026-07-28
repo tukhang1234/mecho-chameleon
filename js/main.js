@@ -244,7 +244,7 @@ function initGame() {
     // Auto Aim HUD logic
     const autoAimContainer = document.getElementById('auto-aim-container');
     if (autoAimContainer) {
-        if (equippedItems.arms_m2 || equippedItems.arms_m3) {
+        if (equippedItems.arms_m2 || equippedItems.arms_m3 || equippedItems.arms_m4 || equippedItems.arms_m5 || equippedItems.arms_m6) {
             autoAimContainer.classList.remove('hidden');
         } else {
             autoAimContainer.classList.add('hidden');
@@ -1026,6 +1026,8 @@ document.addEventListener('click', (e) => {
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
                     equippedItems.arms_m4 = false;
+                    equippedItems.arms_m5 = false;
+                    equippedItems.arms_m6 = false;
                 }
                 equippedItems[itemType] = true;
                 saveGameData();
@@ -1048,6 +1050,8 @@ document.addEventListener('click', (e) => {
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
                     equippedItems.arms_m4 = false;
+                    equippedItems.arms_m5 = false;
+                    equippedItems.arms_m6 = false;
                 }
                 equippedItems[itemType] = true;
             } else {
