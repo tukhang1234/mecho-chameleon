@@ -167,7 +167,9 @@ class Player {
         }
         if (this.stealthCooldown > 0) {
             this.stealthCooldown--;
-            if (this.stealthCooldown < this.maxStealthCooldown - 90) this.emergencyStealthActive = false;
+        }
+        if (this.stealthCooldown <= Math.max(0, this.maxStealthCooldown - 90)) {
+            this.emergencyStealthActive = false;
         }
         if (this.emergencyStealthActive)    this.stealthLevel = Math.min(1, this.stealthLevel + 0.12);
         else if (!this.isMoving)            this.stealthLevel = Math.min(0.35, this.stealthLevel + 0.012); // passive stealth: max 35% fade
@@ -280,12 +282,12 @@ class Player {
                     if (hasM1) {
                         if (targetLeft) { 
                             if (targetLeft.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 35 });
-                            else if (targetLeft.hp !== undefined) targetLeft.hp -= 35; 
+                            else if (targetLeft.takeDamage) { if (targetLeft.takeDamage(35, targetLeft.x, targetLeft.y).dead && typeof onEnemyDeath !== 'undefined') { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); } }
                             didPunch = true; this.armsPunchAnimL = 10; 
                         }
                         if (targetRight) { 
                             if (targetRight.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 35 });
-                            else if (targetRight.hp !== undefined) targetRight.hp -= 35; 
+                            else if (targetRight.takeDamage) { if (targetRight.takeDamage(35, targetRight.x, targetRight.y).dead && typeof onEnemyDeath !== 'undefined') { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); } }
                             didPunch = true; this.armsPunchAnimR = 10; 
                         }
                         if (didPunch) {
@@ -294,19 +296,20 @@ class Player {
                         }
                     } 
                     else if (hasM2 || hasM3 || hasM4) {
-                        const isAuto = typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true;
+                        const modePvP = typeof mpMode !== 'undefined' && mpMode === 'pvp';
+                        const isAuto = modePvP ? false : (typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true);
                         const wantsManualFire = !isAuto && typeof keys !== 'undefined' && keys['Shift'];
                         
                         // Dagger stab for M2 if close
                         if (hasM2) {
                             if (targetLeft && Math.hypot(targetLeft.x - this.x, targetLeft.y - this.y) < 180) {
                                 if (targetLeft.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 40 });
-                                else if (targetLeft.hp !== undefined) targetLeft.hp -= 40; 
+                                else if (targetLeft.takeDamage) { if (targetLeft.takeDamage(40, targetLeft.x, targetLeft.y).dead && typeof onEnemyDeath !== 'undefined') { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); } }
                                 didPunch = true; this.armsPunchAnimL = 10;
                             }
                             if (targetRight && Math.hypot(targetRight.x - this.x, targetRight.y - this.y) < 180) {
                                 if (targetRight.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 40 });
-                                else if (targetRight.hp !== undefined) targetRight.hp -= 40; 
+                                else if (targetRight.takeDamage) { if (targetRight.takeDamage(40, targetRight.x, targetRight.y).dead && typeof onEnemyDeath !== 'undefined') { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); } }
                                 didPunch = true; this.armsPunchAnimR = 10;
                             }
                             if (didPunch) {
@@ -344,6 +347,8 @@ class Player {
                                 this.armsPunchAnimL = 5;
                                 this.armsPunchAnimR = 5;
                             }
+                        } else {
+                            this.armsAngle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
                         }
                     }
                 }

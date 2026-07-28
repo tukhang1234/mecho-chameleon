@@ -753,7 +753,7 @@ function update() {
     bgT += 0.008;
 
     // Wave timing (host or single-player only)
-    if (!waveActive && !(mpMode === 'coop' && playerIndex === 2)) {
+    if (!waveActive && mpMode !== 'pvp' && !(mpMode === 'coop' && playerIndex === 2)) {
         waveTimer--;
         if (waveTimer <= 0) startNextWave();
     }
@@ -1098,13 +1098,7 @@ cancelLobbyBtn.addEventListener('click', (e) => {
     modeSelectScr.classList.remove('hidden');
 });
 
-if (victoryRestartBtn) {
-    victoryRestartBtn.addEventListener('click', (e) => {
-        if (e) e.target.blur();
-        victoryScr.classList.add('hidden');
-        mainMenu.classList.remove('hidden');
-    });
-}
+
 
 // ==========================
 // MULTIPLAYER FUNCTIONS
@@ -1201,6 +1195,7 @@ function setupSocketListeners() {
 
     socket.on('opponent_disconnected', () => {
         if (gameState === 'playing') {
+            opponentState = null;
             showWaveAnnounce('⚠ Đối thủ ngắt kết nối!');
             setTimeout(() => {
                 if (gameState === 'playing') endGame();
