@@ -336,6 +336,41 @@
             <button id="back-from-arms" class="back-btn">← Quay lại Shop</button>
         </div>
 
+        <!-- ====== LOADING SCREEN ====== -->
+        <div id="loading-screen" class="screen hidden" style="z-index: 1000; background: #000;">
+            <div class="loader-spinner"></div>
+            <h1 class="neon-text title" id="loading-text" style="margin-top: 20px;">LOADING...</h1>
+        </div>
+
+        <!-- ====== COUNTDOWN SCREEN ====== -->
+        <div id="countdown-screen" class="screen hidden" style="z-index: 900; background: rgba(0,0,0,0.5);">
+            <h1 class="neon-text" id="countdown-text" style="font-size: 10rem; color: #ff00ff; text-shadow: 0 0 40px #ff00ff;">3</h1>
+        </div>
+
+        <!-- ====== STATS PANEL ====== -->
+        <div id="stats-panel" class="hidden" style="position: absolute; right: 20px; top: 80px; background: rgba(0,0,0,0.8); border: 2px solid #00f3ff; border-radius: 10px; padding: 15px; color: #fff; z-index: 50; width: 250px; backdrop-filter: blur(5px);">
+            <h2 class="neon-text" style="font-size: 1.2rem; text-align: center; margin-bottom: 10px;">📊 STATS</h2>
+            <div style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 15px;">
+                <p>HP: <span id="stat-hp" style="color: #39ff14;">0/0</span></p>
+                <p>Damage Mult: <span id="stat-dmg" style="color: #ffaa00;">1.0x</span></p>
+                <p>Speed: <span id="stat-spd" style="color: #00f3ff;">0.0</span></p>
+                <p>Arms CD: <span id="stat-cd" style="color: #ff00ff;">0</span></p>
+                <p>Stealth: <span id="stat-stealth" style="color: #aaa;">0%</span></p>
+            </div>
+            <button id="exit-game-btn" class="neon-button" style="width: 100%; padding: 8px; font-size: 0.9rem;">🚪 THOÁT</button>
+        </div>
+        <button id="stats-toggle-btn" class="neon-button hidden" style="position: absolute; right: 20px; top: 20px; z-index: 51; padding: 8px 15px; font-size: 1rem; border-radius: 8px;">📊 Chỉ Số (C)</button>
+
+        <!-- ====== CHAT SYSTEM ====== -->
+        <button id="chat-toggle-btn" class="hidden" style="position: absolute; bottom: 20px; left: 20px; z-index: 60; background: rgba(0,0,0,0.6); border: 2px solid #00f3ff; border-radius: 50%; width: 50px; height: 50px; color: #00f3ff; font-size: 1.5rem; cursor: pointer; box-shadow: 0 0 10px rgba(0,243,255,0.5);">💬</button>
+        <div id="chat-container" class="hidden" style="position: absolute; bottom: 80px; left: 20px; z-index: 60; width: 300px; height: 250px; background: rgba(0,0,0,0.8); border: 2px solid #00f3ff; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(5px);">
+            <div id="chat-messages" style="flex-grow: 1; padding: 10px; overflow-y: auto; color: #fff; font-size: 0.9rem; display: flex; flex-direction: column; gap: 8px;"></div>
+            <div style="display: flex; padding: 5px; border-top: 1px solid rgba(0,243,255,0.3);">
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; background: transparent; border: none; color: #fff; padding: 5px; outline: none; font-family: 'Roboto', sans-serif;">
+                <button id="chat-send-btn" style="background: transparent; border: none; color: #00f3ff; cursor: pointer; font-weight: bold; padding: 0 10px;">Gửi</button>
+            </div>
+        </div>
+
     </div><!-- /ui-layer -->
 </div><!-- /game-container -->
 

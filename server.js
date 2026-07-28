@@ -35,6 +35,7 @@ app.get('/', (req, res) => {
 // ─── Matchmaking ────────────────────────────────────────────────────────────
 // Simple single-slot queue per mode: first player waits, second joins them.
 const waitingQueue = {}; // { mode: socketId }
+const roomRestarts = {}; // { roomId: Set<socketId> }
 
 // ─── Socket.IO Events ───────────────────────────────────────────────────────
 io.on('connection', (socket) => {
@@ -130,7 +131,16 @@ io.on('connection', (socket) => {
     // ── Relay: restart request ─────────────────────────────────────
     socket.on('request_restart', () => {
         const { roomId } = socket.data;
-        if (roomId) socket.to(roomId).emit('opponent_restart');
+        if (roomId) {
+            if (!roomRestarts[roomId]) roomRestarts[roomId] = new Set();
+            roomRestarts[roomId].add(socket.id);
+            const votes = roomRestarts[roomId].size;
+            io.to(roomId).emit('restart_vote_status', { votes });
+            if (votes >= 2) {
+                io.to(roomId).emit('restart_game');
+                roomRestarts[roomId].clear();
+            }
+        }
     });
 
     // ── Relay: chat message ────────────────────────────────────────
@@ -150,7 +160,13 @@ io.on('connection', (socket) => {
         }
         // Notify room partner
         const { roomId } = socket.data;
-        if (roomId) socket.to(roomId).emit('opponent_disconnected');
+        if (roomId) {
+            socket.to(roomId).emit('opponent_disconnected');
+            if (roomRestarts[roomId]) {
+                roomRestarts[roomId].delete(socket.id);
+                if (roomRestarts[roomId].size === 0) delete roomRestarts[roomId];
+            }
+        }
 
         console.log(`🔴 Disconnected: ${socket.id}`);
     });
