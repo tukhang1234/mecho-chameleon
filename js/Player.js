@@ -1,3 +1,8 @@
+const imgTitanBody = new Image(); imgTitanBody.src = 'assets/titan_body.png';
+const imgTitanGun = new Image(); imgTitanGun.src = 'assets/titan_gun.png';
+const imgTitanHammer1 = new Image(); imgTitanHammer1.src = 'assets/titan_hammer_1.png';
+const imgTitanHammer2 = new Image(); imgTitanHammer2.src = 'assets/titan_hammer_2.png';
+
 // --- Player.js: Mecho Chameleon with Damage System and Weapon Accessories ---
 
 class Bullet {
@@ -1245,138 +1250,56 @@ Player.prototype._drawTitan = function (ctx) {
     ctx.translate(bx, by + breath * 0.5); // Breathing sway
     ctx.rotate(a);
 
-    // Common styling
-    const armorColor = '#1a1d24'; // Very dark gray
-    const armorStroke = '#0f1115';
-    const cyanGlow = '#00f3ff';
-    const cyanDark = '#00aaff';
-
-    // === RIGHT ARM (Bottom in 2D top-down) - HAMMER ===
-    const hammerA = this.hammerAngle !== undefined ? this.hammerAngle - a : 0;
-    const swingProgress = (this.hammerSwing || 0) / 30; // 1 -> 0
-    const hammerSwingA = hammerA - swingProgress * 1.8;
-    const hammerDist = 20 + swingProgress * 25;
-    
-    ctx.save();
-    // Shoulder (Right)
-    ctx.fillStyle = armorColor;
-    ctx.strokeStyle = armorStroke;
-    ctx.lineWidth = 2;
-    ctx.fillRect(-15, 12, 24, 18);
-    ctx.strokeRect(-15, 12, 24, 18);
-    // Cyan stripe on shoulder
-    ctx.fillStyle = cyanDark;
-    ctx.fillRect(-5, 16, 4, 10);
-    
-    // Arm + Hammer
-    ctx.rotate(hammerSwingA);
-    // Arm segment
-    ctx.fillStyle = '#333';
-    ctx.fillRect(8, 14, hammerDist - 8, 10);
-    // Hammer head (cylinder-like)
-    ctx.translate(hammerDist + 8, 19);
-    ctx.fillStyle = armorColor;
-    ctx.fillRect(-10, -14, 20, 28);
-    ctx.strokeRect(-10, -14, 20, 28);
-    // Hammer core glow
-    ctx.beginPath();
-    ctx.arc(0, 0, 6, 0, Math.PI * 2);
-    ctx.fillStyle = cyanGlow;
-    ctx.shadowBlur = 10; ctx.shadowColor = cyanGlow;
-    ctx.fill();
-    
-    // Impact Flash (Yellow/Orange)
-    if (swingProgress > 0.5) {
-        ctx.globalAlpha = swingProgress;
-        ctx.beginPath();
-        ctx.arc(10, 0, 20 + (1 - swingProgress) * 30, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffaa00';
-        ctx.shadowBlur = 20; ctx.shadowColor = '#ffff00';
-        ctx.fill();
-    }
-    ctx.restore();
+    // Scale factor to fit the game world (adjust if needed)
+    const scale = 0.35;
 
     // === LEFT ARM (Top in 2D top-down) - RAILGUN ===
     const recoilBack = this.recoil || 0;
     ctx.save();
-    // Shoulder (Left)
-    ctx.fillStyle = armorColor;
-    ctx.strokeStyle = armorStroke;
-    ctx.lineWidth = 2;
-    ctx.fillRect(-15, -30, 24, 18);
-    ctx.strokeRect(-15, -30, 24, 18);
-    // Cyan stripe on shoulder
-    ctx.fillStyle = cyanDark;
-    ctx.fillRect(-5, -26, 4, 10);
-    
-    // Gun body
-    ctx.translate(-recoilBack, -21); // Recoil shift
-    ctx.fillStyle = '#2a2d34';
-    ctx.fillRect(5, -6, 30, 12);
-    ctx.strokeRect(5, -6, 30, 12);
-    // Gun barrel
-    ctx.fillStyle = '#111';
-    ctx.fillRect(35, -3, 15, 6);
-    // Gun cyan accents
-    ctx.fillStyle = cyanGlow;
-    ctx.shadowBlur = 5; ctx.shadowColor = cyanGlow;
-    ctx.fillRect(15, -4, 15, 3);
-    
+    // Move to left shoulder position and apply recoil
+    ctx.translate(-recoilBack, -25);
+    if (imgTitanGun.complete) {
+        // Assume gun shoulder is roughly near the left side of its bounding box
+        ctx.drawImage(imgTitanGun, -imgTitanGun.width * scale * 0.3, -imgTitanGun.height * scale * 0.5, imgTitanGun.width * scale, imgTitanGun.height * scale);
+    }
     // Muzzle flash when recoiling
     if (recoilBack > 8) {
         ctx.beginPath();
-        ctx.arc(52 + recoilBack * 0.5, 0, 6 + Math.random() * 4, 0, Math.PI * 2);
+        ctx.arc(50 + recoilBack * 0.5, 0, 6 + Math.random() * 4, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 25; ctx.shadowColor = cyanGlow;
+        ctx.shadowBlur = 25; ctx.shadowColor = '#00f3ff';
         ctx.globalAlpha = recoilBack / 18;
         ctx.fill();
     }
     ctx.restore();
 
-    // === MAIN BODY (Blocky core) ===
+    // === RIGHT ARM (Bottom in 2D top-down) - HAMMER ===
+    const hammerA = this.hammerAngle !== undefined ? this.hammerAngle - a : 0;
+    const swingProgress = (this.hammerSwing || 0) / 30; // 1 -> 0
+    const hammerSwingA = hammerA - swingProgress * 1.8;
+    
     ctx.save();
-    ctx.fillStyle = armorColor;
-    ctx.strokeStyle = armorStroke;
-    ctx.lineWidth = 3;
-    // Draw trapezoid/square body
-    ctx.beginPath();
-    ctx.moveTo(-18, -18);
-    ctx.lineTo(15, -14);
-    ctx.lineTo(15, 14);
-    ctx.lineTo(-18, 18);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.translate(0, 25); // Right shoulder position
+    ctx.rotate(hammerSwingA);
+    
+    let hammerImg = (swingProgress > 0.5) ? imgTitanHammer2 : imgTitanHammer1;
+    if (hammerImg.complete) {
+        // Assume hammer shoulder is roughly near the left side of its bounding box
+        ctx.drawImage(hammerImg, -hammerImg.width * scale * 0.2, -hammerImg.height * scale * 0.5, hammerImg.width * scale, hammerImg.height * scale);
+    }
+    ctx.restore();
 
-    // Wing/Back attachments
-    ctx.fillStyle = '#111';
-    ctx.beginPath(); ctx.moveTo(-18, -10); ctx.lineTo(-28, -25); ctx.lineTo(-24, -5); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-18, 10);  ctx.lineTo(-28, 25);  ctx.lineTo(-24, 5);  ctx.fill();
-    // Cyan stripes on wings
-    ctx.strokeStyle = cyanDark;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-20, -15); ctx.lineTo(-26, -20); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-20, 15);  ctx.lineTo(-26, 20);  ctx.stroke();
+    // === MAIN BODY (Blocky core) ===
+    if (imgTitanBody.complete) {
+        ctx.drawImage(imgTitanBody, -imgTitanBody.width * scale * 0.5, -imgTitanBody.height * scale * 0.5, imgTitanBody.width * scale, imgTitanBody.height * scale);
+    }
 
-    // Red visor eye (T-shape)
-    ctx.fillStyle = '#ff003c';
-    ctx.shadowBlur = 10; ctx.shadowColor = '#ff003c';
-    ctx.fillRect(10, -5, 3, 10); // Vertical slit
-    ctx.fillRect(13, -1, 3, 2);  // Forward dot
-
-    // Chest Core (Cyan Flame Emitter)
-    ctx.beginPath();
-    ctx.arc(2, 0, 5 + Math.sin(t*5)*1, 0, Math.PI * 2);
-    ctx.fillStyle = cyanGlow;
-    ctx.shadowBlur = 15; ctx.shadowColor = cyanGlow;
-    ctx.fill();
-
-    // If firing flame, add intense core glow
+    // Chest Core (Cyan Flame Emitter intense glow when firing)
     if (typeof mouse !== 'undefined' && mouse && mouse.rightDown && (this.energy || 0) > 0) {
         ctx.beginPath();
-        ctx.arc(4, 0, 8 + Math.random()*2, 0, Math.PI * 2);
+        ctx.arc(10, 0, 8 + Math.random()*3, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 30; ctx.shadowColor = cyanGlow;
+        ctx.shadowBlur = 35; ctx.shadowColor = '#00f3ff';
         ctx.fill();
     }
     
