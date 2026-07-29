@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,350 +8,441 @@
     <link rel="stylesheet" href="style.css">
     <style>
         /* Fixed CSS Nesting Issue & Mythic/Godly Styles */
-        .shop-item.mythic { border: 2px solid #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.3); }
-        .shop-item.mythic:hover { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.8); }
-        .shop-item.mythic .item-name { color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+        .shop-item.mythic {
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+        }
 
-        .shop-item.godly { border: 2px solid #00f3ff; box-shadow: 0 0 20px rgba(0,243,255,0.5); background: linear-gradient(135deg, rgba(0,243,255,0.1), rgba(0,0,0,0.9)); animation: godlyGlow 2s infinite alternate;}
-        .shop-item.godly:hover { border-color: #ffffff; box-shadow: 0 0 35px rgba(0,243,255,0.9); }
+        .shop-item.mythic:hover {
+            border-color: #ff00ff;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+        }
+
+        .shop-item.mythic .item-name {
+            color: #ff00ff;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+
+        .shop-item.godly {
+            border: 2px solid #00f3ff;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(0, 0, 0, 0.9));
+            animation: godlyGlow 2s infinite alternate;
+        }
+
+        .shop-item.godly:hover {
+            border-color: #ffffff;
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.9);
+        }
+
         @keyframes godlyGlow {
-            0% { box-shadow: 0 0 10px rgba(0,243,255,0.4), inset 0 0 10px rgba(0,243,255,0.2); }
-            100% { box-shadow: 0 0 25px rgba(0,243,255,0.8), inset 0 0 20px rgba(0,243,255,0.5); }
+            0% {
+                box-shadow: 0 0 10px rgba(0, 243, 255, 0.4), inset 0 0 10px rgba(0, 243, 255, 0.2);
+            }
+
+            100% {
+                box-shadow: 0 0 25px rgba(0, 243, 255, 0.8), inset 0 0 20px rgba(0, 243, 255, 0.5);
+            }
         }
 
         /* TITAN UI STYLES */
-        .energy-bar-container { width: clamp(200px, 40vw, 420px); height: 12px; background: rgba(0,170,255,0.15); border: 2px solid #00aaff; border-radius: 6px; overflow: hidden; box-shadow: 0 0 8px rgba(0,170,255,0.3); margin-top: 5px; }
-        #energyBar { width: 100%; height: 100%; background: linear-gradient(90deg, #0066ff, #00aaff); box-shadow: 0 0 12px #00aaff; transition: width 0.1s linear; }
-        #energy-label { font-family: 'Orbitron', monospace; font-size: 0.7rem; color: #00aaff; letter-spacing: 1px; text-shadow: 0 0 6px #00aaff; }
+        .energy-bar-container {
+            width: clamp(200px, 40vw, 420px);
+            height: 12px;
+            background: rgba(0, 170, 255, 0.15);
+            border: 2px solid #00aaff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(0, 170, 255, 0.3);
+            margin-top: 5px;
+        }
 
-        .shop-item.titan { border: 2px solid #00aaff; box-shadow: 0 0 20px rgba(0,170,255,0.4); background: linear-gradient(180deg, rgba(0,40,80,0.9), rgba(0,0,0,0.95)); position: relative; overflow: hidden; }
-        .shop-item.titan::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,170,255,0.04) 10px, rgba(0,170,255,0.04) 20px); animation: moveStripes 12s linear infinite; pointer-events: none; }
-        .shop-item.titan:hover { border-color: #55ccff; box-shadow: 0 0 35px rgba(0,170,255,0.8); }
-        @keyframes moveStripes { 100% { transform: translateY(50px); } }
+        #energyBar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #0066ff, #00aaff);
+            box-shadow: 0 0 12px #00aaff;
+            transition: width 0.1s linear;
+        }
+
+        #energy-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            color: #00aaff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 6px #00aaff;
+        }
+
+        .shop-item.titan {
+            border: 2px solid #00aaff;
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
+            background: linear-gradient(180deg, rgba(0, 40, 80, 0.9), rgba(0, 0, 0, 0.95));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shop-item.titan::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 170, 255, 0.04) 10px, rgba(0, 170, 255, 0.04) 20px);
+            animation: moveStripes 12s linear infinite;
+            pointer-events: none;
+        }
+
+        .shop-item.titan:hover {
+            border-color: #55ccff;
+            box-shadow: 0 0 35px rgba(0, 170, 255, 0.8);
+        }
+
+        @keyframes moveStripes {
+            100% {
+                transform: translateY(50px);
+            }
+        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap"
+        rel="stylesheet">
 </head>
+
 <body oncontextmenu="return false;">
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
 
-    <div id="ui-layer">
+        <div id="ui-layer">
 
-        <!-- ====== MAIN MENU ====== -->
-        <div id="main-menu" class="screen active">
-            <h1 class="neon-text title">MECHO<br>CHAMELEON</h1>
-            <p class="subtitle">Cyber-Stealth Survival IO</p>
-            <div class="menu-buttons-container">
-                <button id="play-btn" class="neon-button">▶ PLAY</button>
-                <button id="mp-btn" class="neon-button mp-button">🌐 MULTIPLAYER</button>
-                <button id="shop-btn" class="neon-button shop-button">🛒 SHOP</button>
-            </div>
-            
-            <div class="coins-display menu-coins">
-                <span class="coin-icon">🪙</span>
-                <span id="menuCoinsDisplay">0</span>
-            </div>
-
-            <div class="menu-lower">
-                <div class="leaderboard-preview">
-                    <h3>🏆 TOP SCORES</h3>
-                    <ul id="leaderboard-list">
-                        <li>1. CyberLizard — 42,850</li>
-                        <li>2. NeonNinja — 31,200</li>
-                        <li>3. GearHead — 19,500</li>
-                    </ul>
+            <!-- ====== MAIN MENU ====== -->
+            <div id="main-menu" class="screen active">
+                <h1 class="neon-text title">MECHO<br>CHAMELEON</h1>
+                <p class="subtitle">Cyber-Stealth Survival IO</p>
+                <div class="menu-buttons-container">
+                    <button id="play-btn" class="neon-button">▶ PLAY</button>
+                    <button id="mp-btn" class="neon-button mp-button">🌐 MULTIPLAYER</button>
+                    <button id="shop-btn" class="neon-button shop-button">🛒 SHOP</button>
                 </div>
-                <div class="instructions">
-                    <img src="tutorial.png" alt="Hướng dẫn chơi" class="tutorial-img">
-                    <p class="tutorial-note">Wave 10, 20, 30... = BOSS | Giết BOSS nhận BUFF vũ khí</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- ====== HUD ====== -->
-        <div id="hud" class="screen hidden">
-            <!-- Multiplayer player labels -->
-            <div id="p1-label" class="player-label p1-label hidden">👤 P1 — YOU</div>
-            <!-- Opponent HP bar (PvP only) -->
-            <div id="opp-hp-container" class="opp-hp-container hidden">
-                <span class="label opp-label">⚔ ENEMY HP</span>
-                <div class="opp-hp-track">
-                    <div id="oppHealthBar" class="opp-hp-fill"></div>
-                </div>
-            </div>
-            <div class="top-bar">
-                <div class="score-container">
-                    <span class="label">SCORE</span>
-                    <span id="scoreDisplay">0</span>
-                </div>
-                <div class="wave-container">
-                    <span class="label">WAVE</span>
-                    <span id="waveDisplay">1</span>
-                </div>
-                <div class="gears-container">
-                    <span class="label">GEAR</span>
-                    <span id="gearsDisplay">0</span>
-                </div>
-            </div>
-
-            <div id="wave-announce" class="hidden">WAVE 1</div>
-
-            <div class="bottom-bar">
-                <div class="health-bar-container">
-                    <div id="healthBar" class="health-bar-fill"></div>
-                </div>
-                <!-- Titan Energy Bar (only visible when titan_blue equipped) -->
-                <div class="energy-bar-container hidden" id="energy-bar-wrapper">
-                    <div id="energyBar"></div>
-                </div>
-                <div class="stealth-cooldown-container">
-                    <span class="label">STEALTH</span>
-                    <div id="stealthCooldownBar" class="cooldown-bar-fill ready">READY</div>
-                </div>
-            </div>
-
-            <!-- Auto-Aim Toggle (Bottom Left) -->
-            <div id="auto-aim-container" class="hidden">
-                <button id="auto-aim-btn" class="neon-button small-btn active">AUTO-AIM: ON</button>
-                <div class="aim-hint">Chuột trái: Bắn thủ công | Chuột phải: Bắn lưỡi</div>
-            </div>
-
-            <div id="upgrade-notification" class="hidden"></div>
-            
-        </div>
-
-        <!-- ====== MODE SELECT ====== -->
-        <div id="mode-select" class="screen hidden">
-            <h1 class="neon-text title">MULTI<br>PLAYER</h1>
-            <p class="subtitle">Chọn chế độ chơi</p>
-            <div class="mode-buttons">
-                <button id="coop-btn" class="neon-button mode-card">
-                    <span class="mode-icon">🤝</span>
-                    <span class="mode-name">CO-OP</span>
-                    <span class="mode-desc">Cùng nhau chiến đấu chống Enemies</span>
-                </button>
-                <button id="pvp-btn" class="neon-button mode-card pvp-card">
-                    <span class="mode-icon">⚔</span>
-                    <span class="mode-name">PvP</span>
-                    <span class="mode-desc">Đấu tay đôi — Ai giết ai trước thắng!</span>
-                </button>
-            </div>
-            <button id="back-from-mode" class="back-btn">← Quay lại</button>
-        </div>
-
-        <!-- ====== LOBBY / WAITING ====== -->
-        <div id="lobby-screen" class="screen hidden">
-            <div class="lobby-card">
-                <div id="lobby-mode-label" class="lobby-mode-tag">🤝 CO-OP</div>
-                <div class="lobby-spinner-wrap">
-                    <div class="lobby-spinner"></div>
-                    <div class="lobby-spinner-inner"></div>
-                </div>
-                <p id="lobby-status" class="lobby-status">🔄 Đang kết nối...</p>
-                <p class="lobby-tip">📡 Chạy <code>ngrok http 3000</code> rồi gửi link cho bạn!</p>
-                <button id="cancel-lobby-btn" class="back-btn">✕ Hủy</button>
-            </div>
-        </div>
-
-        <!-- ====== VICTORY (PvP) ====== -->
-        <div id="victory-screen" class="screen hidden">
-            <h1 class="neon-text victory-text">🏆 CHIẾN THẮNG!</h1>
-            <div class="stats">
-                <p>Score: <span id="victoryScore">0</span></p>
-                <p>Gears: <span id="victoryGears">0</span></p>
-            </div>
-            <button id="victory-restart-btn" class="neon-button">↺ Chơi lại</button>
-            <button id="menu-from-victory-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
-        </div>
-
-        <!-- ====== GAME OVER ====== -->
-        <div id="game-over-screen" class="screen hidden">
-            <h1 class="neon-text red-neon">SYSTEM FAILURE</h1>
-            <div class="stats">
-                <p>Score: <span id="finalScore">0</span></p>
-                <p>Gears: <span id="finalGears">0</span></p>
-                <p>Wave Reached: <span id="finalWave">0</span></p>
-            </div>
-            <button id="restart-btn" class="neon-button">↺ RESTART</button>
-            <button id="menu-from-gameover-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
-        </div>
-
-        <!-- ====== SHOP SCREEN ====== -->
-        <div id="shop-screen" class="screen hidden">
-            <div class="shop-header">
-                <h1 class="neon-text title shop-title">BLACK MARKET</h1>
-                <div class="coins-display shop-coins">
+                <div class="coins-display menu-coins">
                     <span class="coin-icon">🪙</span>
-                    <span id="shopCoinsDisplay">0</span>
+                    <span id="menuCoinsDisplay">0</span>
                 </div>
-            </div>
-            <div class="shop-grid">
-                <!-- Item 1: Neon Armor -->
-                <div class="shop-item" data-item="armor">
-                    <div class="item-icon">🛡️</div>
-                    <div class="item-info">
-                        <h3>Neon Armor</h3>
-                        <p>Tăng 50 Máu Tối Đa. Trang bị lớp giáp ánh sáng bảo vệ.</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="5000">5000 🪙</button>
-                    </div>
-                </div>
-                <!-- Item 2: Mecha Arms (click to open sub-panel) -->
-                <div class="shop-item expandable" id="mecha-arms-category">
-                    <div class="item-icon">🦾</div>
-                    <div class="item-info">
-                        <h3>Mecha Arms</h3>
-                        <p>Bấm để chọn 4 mẫu Cánh tay Robot siêu ngầu.</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="expand-btn">CHỌN MẪU →</button>
-                    </div>
-                </div>
-                <!-- Item 3: Plasma Core -->
-                <div class="shop-item" data-item="core">
-                    <div class="item-icon">🌀</div>
-                    <div class="item-info">
-                        <h3>Plasma Core</h3>
-                        <p>Đổi màu hiệu ứng Tắc Kè sang Đỏ rực. Tăng tốc độ chạy.</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="3000">3000 🪙</button>
-                    </div>
-                </div>
-                <!-- TITAN SHELLS: Enter Hangar -->
-                <div class="shop-item expandable titan" id="titan-category">
-                    <div class="item-icon" style="font-size: 2.5rem; text-shadow: 0 0 20px #00aaff;">🤖</div>
-                    <div class="item-info">
-                        <h3 style="color: #00aaff; text-shadow: 0 0 10px #00aaff;">Titan Shells</h3>
-                        <p style="color: #aaddff;">Trở thành Titan thép. Mở khoá Flame Breath & Shockwave Hammer kinh khủng!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="expand-btn" style="background: rgba(0,170,255,0.2); border-color: #00aaff; color: #fff;">ENTER HANGAR →</button>
-                    </div>
-                </div>
-            </div>
-            <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
-        </div>
 
-        <!-- ====== MECHA ARMS SUB-PANEL (overlay) ====== -->
-        <div id="mecha-arms-panel" class="screen hidden">
-            <div class="shop-header">
-                <h1 class="neon-text title shop-title" style="font-size: 1.6rem;">🦾 MECHA ARMS</h1>
-                <div class="coins-display shop-coins">
-                    <span class="coin-icon">🪙</span>
-                    <span id="armsCoinsDisplay">0</span>
-                </div>
-            </div>
-            <div class="shop-grid">
-                <div class="shop-item" data-item="arms_m1">
-                    <div class="item-icon">🥊</div>
-                    <div class="item-info">
-                        <h3>Model 1 — Brawler</h3>
-                        <p>Tự động tung cú đấm khi kẻ thù áp sát từ cả 2 bên. Phạm vi đánh rộng.</p>
+                <div class="menu-lower">
+                    <div class="leaderboard-preview">
+                        <h3>🏆 TOP SCORES</h3>
+                        <ul id="leaderboard-list">
+                            <li>1. CyberLizard — 42,850</li>
+                            <li>2. NeonNinja — 31,200</li>
+                            <li>3. GearHead — 19,500</li>
+                        </ul>
                     </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="5000">5000 🪙</button>
-                    </div>
-                </div>
-                <div class="shop-item" data-item="arms_m2">
-                    <div class="item-icon">🔫🗡️</div>
-                    <div class="item-info">
-                        <h3>Model 2 — Gun & Dagger</h3>
-                        <p>Tay trái: Dao găm đâm tự động. Tay phải: Súng năng lượng. Hỗ trợ Auto/Manual Aim.</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="15000">15000 🪙</button>
-                    </div>
-                </div>
-                <div class="shop-item" data-item="arms_m3">
-                    <div class="item-icon">🚀</div>
-                    <div class="item-info">
-                        <h3>Model 3 — Heavy Gunner</h3>
-                        <p>2 Súng năng lượng ở cánh tay + 2 Súng lục ở bàn tay. Hỏa lực tối đa!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="30000">30000 🪙</button>
-                    </div>
-                </div>
-                <!-- Item 4: Supreme 4-Arms -->
-                <div class="shop-item mythic" data-item="arms_m4">
-                    <div class="item-icon">🦾</div>
-                    <div class="item-info">
-                        <h3 style="color: #ffaa00; text-shadow: 0 0 5px #ffaa00;">Model 4 — Supreme 4-Arms</h3>
-                        <p>Sức mạnh tối thượng. 4 cánh tay độc lập: 2 Laser siêu mạnh + 2 Súng liên thanh!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="60000" style="border-color: #ffaa00; color: #ffaa00;">60000 🪙</button>
-                    </div>
-                </div>
-                <!-- Item 5: Celestial Asura -->
-                <div class="shop-item mythic" data-item="arms_m5">
-                    <div class="item-icon">✨</div>
-                    <div class="item-info">
-                        <h3 style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">Model 5 — Celestial Asura</h3>
-                        <p>6 Phantom Arms. Slashes nearby enemies & fires 3 Cosmic Lasers!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="100000" style="border-color: #ffd700; color: #ffd700;">100000 🪙</button>
-                    </div>
-                </div>
-                <!-- Item 6: Galactic Seraph -->
-                <div class="shop-item godly" data-item="arms_m6">
-                    <div class="item-icon">🌌</div>
-                    <div class="item-info">
-                        <h3 style="color: #ffffff; text-shadow: 0 0 15px #00f3ff;">Model 6 — Galactic Seraph</h3>
-                        <p>GODLY TIER. 8 Cyber-Wings. Passive Orbital Lightning & Giga Beam Shockwaves!</p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="250000" style="border-color: #00f3ff; color: #00f3ff; font-size: 1.1rem; text-shadow: 0 0 5px #00f3ff;">250000 🪙</button>
+                    <div class="instructions">
+                        <img src="tutorial.png" alt="Hướng dẫn chơi" class="tutorial-img">
+                        <p class="tutorial-note">Wave 10, 20, 30... = BOSS | Giết BOSS nhận BUFF vũ khí</p>
                     </div>
                 </div>
             </div>
-            <button id="back-from-arms" class="back-btn">← Quay lại Shop</button>
-        </div>
 
-        <!-- ====== TITAN HANGAR SUB-PANEL (NEW) ====== -->
-        <div id="titan-panel" class="screen hidden" style="background: rgba(0,5,20,0.97);">
-            <div class="shop-header">
-                <h1 class="neon-text title shop-title" style="font-size: 1.8rem; color: #00aaff; text-shadow: 0 0 20px #00aaff;">🤖 TITAN HANGAR</h1>
-                <div class="coins-display shop-coins">
-                    <span class="coin-icon">🪙</span>
-                    <span id="titanCoinsDisplay">0</span>
-                </div>
-            </div>
-            <div class="shop-grid">
-                <div class="shop-item titan" data-item="titan_blue" style="width: 340px; max-width: 90vw;">
-                    <div class="item-icon" style="font-size: 3.5rem; margin-bottom: 8px; text-shadow: 0 0 20px #00aaff;">🤖</div>
-                    <div class="item-info">
-                        <h3 style="color: #00aaff; font-size: 1.3rem; text-shadow: 0 0 12px #00aaff;">Blue Nova Titan</h3>
-                        <p style="color: #aaddff; font-size: 0.85rem; line-height: 1.6;">
-                            <strong style="color:#fff;">Passive:</strong> Bước đi nặng nề, tốc độ giảm nhưng máu +200.<br>
-                            <strong style="color:#fff;">Auto:</strong> Railgun giật lùi & Búa Shockwave tự động.<br>
-                            <strong style="color:#fff;">Chuột phải:</strong> Phun bão lửa xanh dương mảng rộng — tốn Năng lượng.
-                        </p>
-                    </div>
-                    <div class="item-action">
-                        <button class="buy-btn" data-price="500000" style="border-color: #00aaff; color: #00aaff; box-shadow: 0 0 10px #00aaff; font-size: 1rem;">500000 🪙</button>
+            <!-- ====== HUD ====== -->
+            <div id="hud" class="screen hidden">
+                <!-- Multiplayer player labels -->
+                <div id="p1-label" class="player-label p1-label hidden">👤 P1 — YOU</div>
+                <!-- Opponent HP bar (PvP only) -->
+                <div id="opp-hp-container" class="opp-hp-container hidden">
+                    <span class="label opp-label">⚔ ENEMY HP</span>
+                    <div class="opp-hp-track">
+                        <div id="oppHealthBar" class="opp-hp-fill"></div>
                     </div>
                 </div>
+                <div class="top-bar">
+                    <div class="score-container">
+                        <span class="label">SCORE</span>
+                        <span id="scoreDisplay">0</span>
+                    </div>
+                    <div class="wave-container">
+                        <span class="label">WAVE</span>
+                        <span id="waveDisplay">1</span>
+                    </div>
+                    <div class="gears-container">
+                        <span class="label">GEAR</span>
+                        <span id="gearsDisplay">0</span>
+                    </div>
+                </div>
+
+                <div id="wave-announce" class="hidden">WAVE 1</div>
+
+                <div class="bottom-bar">
+                    <div class="health-bar-container">
+                        <div id="healthBar" class="health-bar-fill"></div>
+                    </div>
+                    <!-- Titan Energy Bar (only visible when titan_blue equipped) -->
+                    <div class="energy-bar-container hidden" id="energy-bar-wrapper">
+                        <div id="energyBar"></div>
+                    </div>
+                    <div class="stealth-cooldown-container">
+                        <span class="label">STEALTH</span>
+                        <div id="stealthCooldownBar" class="cooldown-bar-fill ready">READY</div>
+                    </div>
+                </div>
+
+                <!-- Auto-Aim Toggle (Bottom Left) -->
+                <div id="auto-aim-container" class="hidden">
+                    <button id="auto-aim-btn" class="neon-button small-btn active">AUTO-AIM: ON</button>
+                    <div class="aim-hint">Chuột trái: Bắn thủ công | Chuột phải: Bắn lưỡi</div>
+                </div>
+
+                <div id="upgrade-notification" class="hidden"></div>
+
             </div>
-            <button id="back-from-titan" class="back-btn">← Quay lại Shop</button>
-        </div>
 
-        <!-- ====== LOADING SCREEN ====== -->
-        <div id="loading-screen" class="screen hidden" style="z-index: 1000; background: #000;">
-            <div class="loader-spinner"></div>
-            <h1 class="neon-text title" id="loading-text" style="margin-top: 20px;">LOADING...</h1>
-        </div>
+            <!-- ====== MODE SELECT ====== -->
+            <div id="mode-select" class="screen hidden">
+                <h1 class="neon-text title">MULTI<br>PLAYER</h1>
+                <p class="subtitle">Chọn chế độ chơi</p>
+                <div class="mode-buttons">
+                    <button id="coop-btn" class="neon-button mode-card">
+                        <span class="mode-icon">🤝</span>
+                        <span class="mode-name">CO-OP</span>
+                        <span class="mode-desc">Cùng nhau chiến đấu chống Enemies</span>
+                    </button>
+                    <button id="pvp-btn" class="neon-button mode-card pvp-card">
+                        <span class="mode-icon">⚔</span>
+                        <span class="mode-name">PvP</span>
+                        <span class="mode-desc">Đấu tay đôi — Ai giết ai trước thắng!</span>
+                    </button>
+                </div>
+                <button id="back-from-mode" class="back-btn">← Quay lại</button>
+            </div>
 
-        <!-- ====== COUNTDOWN SCREEN ====== -->
-        <div id="countdown-screen" class="screen hidden" style="z-index: 900; background: rgba(0,0,0,0.5);">
-            <h1 class="neon-text" id="countdown-text" style="font-size: 10rem; color: #ff00ff; text-shadow: 0 0 40px #ff00ff;">3</h1>
-        </div>
+            <!-- ====== LOBBY / WAITING ====== -->
+            <div id="lobby-screen" class="screen hidden">
+                <div class="lobby-card">
+                    <div id="lobby-mode-label" class="lobby-mode-tag">🤝 CO-OP</div>
+                    <div class="lobby-spinner-wrap">
+                        <div class="lobby-spinner"></div>
+                        <div class="lobby-spinner-inner"></div>
+                    </div>
+                    <p id="lobby-status" class="lobby-status">🔄 Đang kết nối...</p>
+                    <p class="lobby-tip">📡 Chạy <code>ngrok http 3000</code> rồi gửi link cho bạn!</p>
+                    <button id="cancel-lobby-btn" class="back-btn">✕ Hủy</button>
+                </div>
+            </div>
 
-        <!-- ====== STATS PANEL (C key or button to toggle, all modes) ====== -->
-        <div id="stats-panel" class="hidden" style="
+            <!-- ====== VICTORY (PvP) ====== -->
+            <div id="victory-screen" class="screen hidden">
+                <h1 class="neon-text victory-text">🏆 CHIẾN THẮNG!</h1>
+                <div class="stats">
+                    <p>Score: <span id="victoryScore">0</span></p>
+                    <p>Gears: <span id="victoryGears">0</span></p>
+                </div>
+                <button id="victory-restart-btn" class="neon-button">↺ Chơi lại</button>
+                <button id="menu-from-victory-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
+            </div>
+
+            <!-- ====== GAME OVER ====== -->
+            <div id="game-over-screen" class="screen hidden">
+                <h1 class="neon-text red-neon">SYSTEM FAILURE</h1>
+                <div class="stats">
+                    <p>Score: <span id="finalScore">0</span></p>
+                    <p>Gears: <span id="finalGears">0</span></p>
+                    <p>Wave Reached: <span id="finalWave">0</span></p>
+                </div>
+                <button id="restart-btn" class="neon-button">↺ RESTART</button>
+                <button id="menu-from-gameover-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
+            </div>
+
+            <!-- ====== SHOP SCREEN ====== -->
+            <div id="shop-screen" class="screen hidden">
+                <div class="shop-header">
+                    <h1 class="neon-text title shop-title">BLACK MARKET</h1>
+                    <div class="coins-display shop-coins">
+                        <span class="coin-icon">🪙</span>
+                        <span id="shopCoinsDisplay">0</span>
+                    </div>
+                </div>
+                <div class="shop-grid">
+                    <!-- Item 1: Neon Armor -->
+                    <div class="shop-item" data-item="armor">
+                        <div class="item-icon">🛡️</div>
+                        <div class="item-info">
+                            <h3>Neon Armor</h3>
+                            <p>Tăng 50 Máu Tối Đa. Trang bị lớp giáp ánh sáng bảo vệ.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="5000">5000 🪙</button>
+                        </div>
+                    </div>
+                    <!-- Item 2: Mecha Arms (click to open sub-panel) -->
+                    <div class="shop-item expandable" id="mecha-arms-category">
+                        <div class="item-icon">🦾</div>
+                        <div class="item-info">
+                            <h3>Mecha Arms</h3>
+                            <p>Bấm để chọn 4 mẫu Cánh tay Robot siêu ngầu.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="expand-btn">CHỌN MẪU →</button>
+                        </div>
+                    </div>
+                    <!-- Item 3: Plasma Core -->
+                    <div class="shop-item" data-item="core">
+                        <div class="item-icon">🌀</div>
+                        <div class="item-info">
+                            <h3>Plasma Core</h3>
+                            <p>Đổi màu hiệu ứng Tắc Kè sang Đỏ rực. Tăng tốc độ chạy.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="3000">3000 🪙</button>
+                        </div>
+                    </div>
+                    <!-- TITAN SHELLS: Enter Hangar -->
+                    <div class="shop-item expandable titan" id="titan-category">
+                        <div class="item-icon" style="font-size: 2.5rem; text-shadow: 0 0 20px #00aaff;">🤖</div>
+                        <div class="item-info">
+                            <h3 style="color: #00aaff; text-shadow: 0 0 10px #00aaff;">Titan Shells</h3>
+                            <p style="color: #aaddff;">Trở thành Titan thép. Mở khoá Flame Breath & Shockwave Hammer
+                                kinh khủng!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="expand-btn"
+                                style="background: rgba(0,170,255,0.2); border-color: #00aaff; color: #fff;">ENTER
+                                HANGAR →</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
+            </div>
+
+            <!-- ====== MECHA ARMS SUB-PANEL (overlay) ====== -->
+            <div id="mecha-arms-panel" class="screen hidden">
+                <div class="shop-header">
+                    <h1 class="neon-text title shop-title" style="font-size: 1.6rem;">🦾 MECHA ARMS</h1>
+                    <div class="coins-display shop-coins">
+                        <span class="coin-icon">🪙</span>
+                        <span id="armsCoinsDisplay">0</span>
+                    </div>
+                </div>
+                <div class="shop-grid">
+                    <div class="shop-item" data-item="arms_m1">
+                        <div class="item-icon">🥊</div>
+                        <div class="item-info">
+                            <h3>Model 1 — Brawler</h3>
+                            <p>Tự động tung cú đấm khi kẻ thù áp sát từ cả 2 bên. Phạm vi đánh rộng.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="5000">5000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item" data-item="arms_m2">
+                        <div class="item-icon">🔫🗡️</div>
+                        <div class="item-info">
+                            <h3>Model 2 — Gun & Dagger</h3>
+                            <p>Tay trái: Dao găm đâm tự động. Tay phải: Súng năng lượng. Hỗ trợ Auto/Manual Aim.</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="15000">15000 🪙</button>
+                        </div>
+                    </div>
+                    <div class="shop-item" data-item="arms_m3">
+                        <div class="item-icon">🚀</div>
+                        <div class="item-info">
+                            <h3>Model 3 — Heavy Gunner</h3>
+                            <p>2 Súng năng lượng ở cánh tay + 2 Súng lục ở bàn tay. Hỏa lực tối đa!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="30000">30000 🪙</button>
+                        </div>
+                    </div>
+                    <!-- Item 4: Supreme 4-Arms -->
+                    <div class="shop-item mythic" data-item="arms_m4">
+                        <div class="item-icon">🦾</div>
+                        <div class="item-info">
+                            <h3 style="color: #ffaa00; text-shadow: 0 0 5px #ffaa00;">Model 4 — Supreme 4-Arms</h3>
+                            <p>Sức mạnh tối thượng. 4 cánh tay độc lập: 2 Laser siêu mạnh + 2 Súng liên thanh!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="60000"
+                                style="border-color: #ffaa00; color: #ffaa00;">60000 🪙</button>
+                        </div>
+                    </div>
+                    <!-- Item 5: Celestial Asura -->
+                    <div class="shop-item mythic" data-item="arms_m5">
+                        <div class="item-icon">✨</div>
+                        <div class="item-info">
+                            <h3 style="color: #ffd700; text-shadow: 0 0 10px #ffd700;">Model 5 — Celestial Asura</h3>
+                            <p>6 Phantom Arms. Slashes nearby enemies & fires 3 Cosmic Lasers!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="100000"
+                                style="border-color: #ffd700; color: #ffd700;">100000 🪙</button>
+                        </div>
+                    </div>
+                    <!-- Item 6: Galactic Seraph -->
+                    <div class="shop-item godly" data-item="arms_m6">
+                        <div class="item-icon">🌌</div>
+                        <div class="item-info">
+                            <h3 style="color: #ffffff; text-shadow: 0 0 15px #00f3ff;">Model 6 — Galactic Seraph</h3>
+                            <p>GODLY TIER. 8 Cyber-Wings. Passive Orbital Lightning & Giga Beam Shockwaves!</p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="250000"
+                                style="border-color: #00f3ff; color: #00f3ff; font-size: 1.1rem; text-shadow: 0 0 5px #00f3ff;">250000
+                                🪙</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="back-from-arms" class="back-btn">← Quay lại Shop</button>
+            </div>
+
+            <!-- ====== TITAN HANGAR SUB-PANEL (NEW) ====== -->
+            <div id="titan-panel" class="screen hidden" style="background: rgba(0,5,20,0.97);">
+                <div class="shop-header">
+                    <h1 class="neon-text title shop-title"
+                        style="font-size: 1.8rem; color: #00aaff; text-shadow: 0 0 20px #00aaff;">🤖 TITAN HANGAR</h1>
+                    <div class="coins-display shop-coins">
+                        <span class="coin-icon">🪙</span>
+                        <span id="titanCoinsDisplay">0</span>
+                    </div>
+                </div>
+                <div class="shop-grid">
+                    <div class="shop-item titan" data-item="titan_blue" style="width: 340px; max-width: 90vw;">
+                        <div class="item-icon"
+                            style="font-size: 3.5rem; margin-bottom: 8px; text-shadow: 0 0 20px #00aaff;">🤖</div>
+                        <div class="item-info">
+                            <h3 style="color: #00aaff; font-size: 1.3rem; text-shadow: 0 0 12px #00aaff;">Mega Titan Armor</h3>
+                            <p style="color: #aaddff; font-size: 0.85rem; line-height: 1.6;">
+                                <strong style="color:#fff;">Passive:</strong> Bước đi nặng nề, tốc độ giảm nhưng máu
+                                +200.<br>
+                                <strong style="color:#fff;">Auto:</strong> Pháo hạng nặng & Búa ngàn cân tự động.<br>
+                                <strong style="color:#fff;">Chuột phải:</strong> Phun bão lửa từ Lõi Ngực — tốn Năng lượng.
+                            </p>
+                        </div>
+                        <div class="item-action">
+                            <button class="buy-btn" data-price="500000"
+                                style="border-color: #00aaff; color: #00aaff; box-shadow: 0 0 10px #00aaff; font-size: 1rem;">500000
+                                🪙</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="back-from-titan" class="back-btn">← Quay lại Shop</button>
+            </div>
+
+            <!-- ====== LOADING SCREEN ====== -->
+            <div id="loading-screen" class="screen hidden" style="z-index: 1000; background: #000;">
+                <div class="loader-spinner"></div>
+                <h1 class="neon-text title" id="loading-text" style="margin-top: 20px;">LOADING...</h1>
+            </div>
+
+            <!-- ====== COUNTDOWN SCREEN ====== -->
+            <div id="countdown-screen" class="screen hidden" style="z-index: 900; background: rgba(0,0,0,0.5);">
+                <h1 class="neon-text" id="countdown-text"
+                    style="font-size: 10rem; color: #ff00ff; text-shadow: 0 0 40px #ff00ff;">3</h1>
+            </div>
+
+            <!-- ====== STATS PANEL (C key or button to toggle, all modes) ====== -->
+            <div id="stats-panel" class="hidden" style="
             position: absolute; right: 20px; top: 70px;
             background: rgba(0,0,0,0.88);
             border: 2px solid #00f3ff;
@@ -362,45 +454,52 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 0 25px rgba(0,243,255,0.25);
         ">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                <h2 class="neon-text" style="font-size: 1.1rem; margin:0;">⚡ POWER STATS</h2>
-                <span style="font-size:0.7rem; color:#555; font-family:monospace;">[C] to close</span>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <h2 class="neon-text" style="font-size: 1.1rem; margin:0;">⚡ POWER STATS</h2>
+                    <span style="font-size:0.7rem; color:#555; font-family:monospace;">[C] to close</span>
+                </div>
+                <div style="font-size: 0.88rem; line-height: 1.9;">
+                    <div
+                        style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                        <span style="color:#888;">❤️ HP</span>
+                        <span id="stat-hp" style="color: #39ff14; font-weight:bold;">0/0</span>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                        <span style="color:#888;">💥 Damage</span>
+                        <span id="stat-dmg" style="color: #ffaa00; font-weight:bold;">1.0x</span>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                        <span style="color:#888;">💨 Speed</span>
+                        <span id="stat-spd" style="color: #00f3ff; font-weight:bold;">4.0</span>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                        <span style="color:#888;">🦾 Arms CD</span>
+                        <span id="stat-cd" style="color: #ff00ff; font-weight:bold;">0f</span>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                        <span style="color:#888;">👁️ Stealth</span>
+                        <span id="stat-stealth" style="color: #aaa; font-weight:bold;">0%</span>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
+                        <span style="color:#888;">🏆 Score</span>
+                        <span id="stat-score" style="color: #ffd700; font-weight:bold;">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#888;">🌊 Wave</span>
+                        <span id="stat-wave" style="color: #ff00ff; font-weight:bold;">1</span>
+                    </div>
+                </div>
+                <button id="exit-game-btn" class="neon-button"
+                    style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top:14px;">🚪 EXIT GAME</button>
             </div>
-            <div style="font-size: 0.88rem; line-height: 1.9;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
-                    <span style="color:#888;">❤️ HP</span>
-                    <span id="stat-hp" style="color: #39ff14; font-weight:bold;">0/0</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
-                    <span style="color:#888;">💥 Damage</span>
-                    <span id="stat-dmg" style="color: #ffaa00; font-weight:bold;">1.0x</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
-                    <span style="color:#888;">💨 Speed</span>
-                    <span id="stat-spd" style="color: #00f3ff; font-weight:bold;">4.0</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
-                    <span style="color:#888;">🦾 Arms CD</span>
-                    <span id="stat-cd" style="color: #ff00ff; font-weight:bold;">0f</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
-                    <span style="color:#888;">👁️ Stealth</span>
-                    <span id="stat-stealth" style="color: #aaa; font-weight:bold;">0%</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,243,255,0.12); padding-bottom:4px; margin-bottom:4px;">
-                    <span style="color:#888;">🏆 Score</span>
-                    <span id="stat-score" style="color: #ffd700; font-weight:bold;">0</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#888;">🌊 Wave</span>
-                    <span id="stat-wave" style="color: #ff00ff; font-weight:bold;">1</span>
-                </div>
-            </div>
-            <button id="exit-game-btn" class="neon-button" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top:14px;">🚪 EXIT GAME</button>
-        </div>
 
-        <!-- Stats toggle button: always visible while playing -->
-        <button id="stats-toggle-btn" class="hidden" style="
+            <!-- Stats toggle button: always visible while playing -->
+            <button id="stats-toggle-btn" class="hidden" style="
             position: absolute; right: 20px; top: 20px;
             z-index: 51;
             padding: 7px 14px;
@@ -415,9 +514,9 @@
             transition: all 0.2s;
         ">📊 STATS [C]</button>
 
-        <!-- ====== CHAT SYSTEM (T key or button to toggle, multiplayer only) ====== -->
-        <!-- Chat toggle button -->
-        <button id="chat-toggle-btn" class="hidden" style="
+            <!-- ====== CHAT SYSTEM (T key or button to toggle, multiplayer only) ====== -->
+            <!-- Chat toggle button -->
+            <button id="chat-toggle-btn" class="hidden" style="
             position: absolute; bottom: 20px; right: 20px;
             z-index: 60;
             background: rgba(0,0,0,0.7);
@@ -431,16 +530,16 @@
             transition: all 0.2s;
             display: flex; align-items: center; justify-content: center;
         ">💬</button>
-        <!-- Chat key hint -->
-        <div id="chat-key-hint" class="hidden" style="
+            <!-- Chat key hint -->
+            <div id="chat-key-hint" class="hidden" style="
             position: absolute; bottom: 75px; right: 20px;
             z-index: 59;
             color: rgba(57,255,20,0.6);
             font-size: 0.68rem;
             font-family: 'Orbitron', monospace;
         ">[T] Chat</div>
-        <!-- Chat window -->
-        <div id="chat-container" class="hidden" style="
+            <!-- Chat window -->
+            <div id="chat-container" class="hidden" style="
             position: absolute; bottom: 80px; right: 20px;
             z-index: 60;
             width: 310px; height: 260px;
@@ -452,26 +551,33 @@
             backdrop-filter: blur(8px);
             box-shadow: 0 0 20px rgba(57,255,20,0.2);
         ">
-            <div style="padding: 8px 12px; background: rgba(57,255,20,0.08); border-bottom: 1px solid rgba(57,255,20,0.2); display:flex; align-items:center; justify-content:space-between;">
-                <span style="color:#39ff14; font-family:'Orbitron',monospace; font-size:0.75rem;">💬 TEAM CHAT</span>
-                <span style="color:#555; font-size:0.65rem; font-family:monospace;">[T] or [ESC] to close</span>
+                <div
+                    style="padding: 8px 12px; background: rgba(57,255,20,0.08); border-bottom: 1px solid rgba(57,255,20,0.2); display:flex; align-items:center; justify-content:space-between;">
+                    <span style="color:#39ff14; font-family:'Orbitron',monospace; font-size:0.75rem;">💬 TEAM
+                        CHAT</span>
+                    <span style="color:#555; font-size:0.65rem; font-family:monospace;">[T] or [ESC] to close</span>
+                </div>
+                <div id="chat-messages"
+                    style="flex-grow: 1; padding: 10px; overflow-y: auto; color: #fff; font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px;">
+                </div>
+                <div
+                    style="display: flex; padding: 6px 8px; border-top: 1px solid rgba(57,255,20,0.2); background: rgba(0,0,0,0.3);">
+                    <input type="text" id="chat-input" placeholder="Nhấn Enter để gửi..." maxlength="80"
+                        style="flex-grow: 1; background: transparent; border: none; color: #39ff14; padding: 5px; outline: none; font-family: 'Roboto', sans-serif; font-size: 0.88rem;">
+                    <button id="chat-send-btn"
+                        style="background: rgba(57,255,20,0.15); border: 1px solid #39ff14; color: #39ff14; cursor: pointer; font-weight: bold; padding: 4px 12px; border-radius: 6px; font-size:0.8rem;">Gửi</button>
+                </div>
             </div>
-            <div id="chat-messages" style="flex-grow: 1; padding: 10px; overflow-y: auto; color: #fff; font-size: 0.88rem; display: flex; flex-direction: column; gap: 6px;"></div>
-            <div style="display: flex; padding: 6px 8px; border-top: 1px solid rgba(57,255,20,0.2); background: rgba(0,0,0,0.3);">
-                <input type="text" id="chat-input" placeholder="Nhấn Enter để gửi..." maxlength="80" style="flex-grow: 1; background: transparent; border: none; color: #39ff14; padding: 5px; outline: none; font-family: 'Roboto', sans-serif; font-size: 0.88rem;">
-                <button id="chat-send-btn" style="background: rgba(57,255,20,0.15); border: 1px solid #39ff14; color: #39ff14; cursor: pointer; font-weight: bold; padding: 4px 12px; border-radius: 6px; font-size:0.8rem;">Gửi</button>
-            </div>
-        </div>
 
-    </div><!-- /ui-layer -->
-</div><!-- /game-container -->
+        </div><!-- /ui-layer -->
+    </div><!-- /game-container -->
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="js/System.js"></script>
-<script src="js/Collectible.js"></script>
-<script src="js/Enemy.js"></script>
-<script src="js/Player.js"></script>
-<script src="js/main.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/System.js"></script>
+    <script src="js/Collectible.js"></script>
+    <script src="js/Enemy.js"></script>
+    <script src="js/Player.js"></script>
+    <script src="js/main.js"></script>
 </body>
-</html>
 
+</html>
