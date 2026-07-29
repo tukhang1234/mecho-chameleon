@@ -17,10 +17,20 @@
             0% { box-shadow: 0 0 10px rgba(0,243,255,0.4), inset 0 0 10px rgba(0,243,255,0.2); }
             100% { box-shadow: 0 0 25px rgba(0,243,255,0.8), inset 0 0 20px rgba(0,243,255,0.5); }
         }
+
+        /* TITAN UI STYLES */
+        .energy-bar-container { width: clamp(200px, 40vw, 420px); height: 12px; background: rgba(0,170,255,0.15); border: 2px solid #00aaff; border-radius: 6px; overflow: hidden; box-shadow: 0 0 8px rgba(0,170,255,0.3); margin-top: 5px; }
+        #energyBar { width: 100%; height: 100%; background: linear-gradient(90deg, #0066ff, #00aaff); box-shadow: 0 0 12px #00aaff; transition: width 0.1s linear; }
+        #energy-label { font-family: 'Orbitron', monospace; font-size: 0.7rem; color: #00aaff; letter-spacing: 1px; text-shadow: 0 0 6px #00aaff; }
+
+        .shop-item.titan { border: 2px solid #00aaff; box-shadow: 0 0 20px rgba(0,170,255,0.4); background: linear-gradient(180deg, rgba(0,40,80,0.9), rgba(0,0,0,0.95)); position: relative; overflow: hidden; }
+        .shop-item.titan::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,170,255,0.04) 10px, rgba(0,170,255,0.04) 20px); animation: moveStripes 12s linear infinite; pointer-events: none; }
+        .shop-item.titan:hover { border-color: #55ccff; box-shadow: 0 0 35px rgba(0,170,255,0.8); }
+        @keyframes moveStripes { 100% { transform: translateY(50px); } }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body oncontextmenu="return false;">
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
 
@@ -88,6 +98,10 @@
             <div class="bottom-bar">
                 <div class="health-bar-container">
                     <div id="healthBar" class="health-bar-fill"></div>
+                </div>
+                <!-- Titan Energy Bar (only visible when titan_blue equipped) -->
+                <div class="energy-bar-container hidden" id="energy-bar-wrapper">
+                    <div id="energyBar"></div>
                 </div>
                 <div class="stealth-cooldown-container">
                     <span class="label">STEALTH</span>
@@ -204,6 +218,17 @@
                         <button class="buy-btn" data-price="3000">3000 🪙</button>
                     </div>
                 </div>
+                <!-- TITAN SHELLS: Enter Hangar -->
+                <div class="shop-item expandable titan" id="titan-category">
+                    <div class="item-icon" style="font-size: 2.5rem; text-shadow: 0 0 20px #00aaff;">🤖</div>
+                    <div class="item-info">
+                        <h3 style="color: #00aaff; text-shadow: 0 0 10px #00aaff;">Titan Shells</h3>
+                        <p style="color: #aaddff;">Trở thành Titan thép. Mở khoá Flame Breath & Shockwave Hammer kinh khủng!</p>
+                    </div>
+                    <div class="item-action">
+                        <button class="expand-btn" style="background: rgba(0,170,255,0.2); border-color: #00aaff; color: #fff;">ENTER HANGAR →</button>
+                    </div>
+                </div>
             </div>
             <button id="back-from-shop" class="back-btn">← Quay lại Menu</button>
         </div>
@@ -283,6 +308,34 @@
                 </div>
             </div>
             <button id="back-from-arms" class="back-btn">← Quay lại Shop</button>
+        </div>
+
+        <!-- ====== TITAN HANGAR SUB-PANEL (NEW) ====== -->
+        <div id="titan-panel" class="screen hidden" style="background: rgba(0,5,20,0.97);">
+            <div class="shop-header">
+                <h1 class="neon-text title shop-title" style="font-size: 1.8rem; color: #00aaff; text-shadow: 0 0 20px #00aaff;">🤖 TITAN HANGAR</h1>
+                <div class="coins-display shop-coins">
+                    <span class="coin-icon">🪙</span>
+                    <span id="titanCoinsDisplay">0</span>
+                </div>
+            </div>
+            <div class="shop-grid">
+                <div class="shop-item titan" data-item="titan_blue" style="width: 340px; max-width: 90vw;">
+                    <div class="item-icon" style="font-size: 3.5rem; margin-bottom: 8px; text-shadow: 0 0 20px #00aaff;">🤖</div>
+                    <div class="item-info">
+                        <h3 style="color: #00aaff; font-size: 1.3rem; text-shadow: 0 0 12px #00aaff;">Blue Nova Titan</h3>
+                        <p style="color: #aaddff; font-size: 0.85rem; line-height: 1.6;">
+                            <strong style="color:#fff;">Passive:</strong> Bước đi nặng nề, tốc độ giảm nhưng máu +200.<br>
+                            <strong style="color:#fff;">Auto:</strong> Railgun giật lùi & Búa Shockwave tự động.<br>
+                            <strong style="color:#fff;">Chuột phải:</strong> Phun bão lửa xanh dương mảng rộng — tốn Năng lượng.
+                        </p>
+                    </div>
+                    <div class="item-action">
+                        <button class="buy-btn" data-price="500000" style="border-color: #00aaff; color: #00aaff; box-shadow: 0 0 10px #00aaff; font-size: 1rem;">500000 🪙</button>
+                    </div>
+                </div>
+            </div>
+            <button id="back-from-titan" class="back-btn">← Quay lại Shop</button>
         </div>
 
         <!-- ====== LOADING SCREEN ====== -->
@@ -365,7 +418,7 @@
         <!-- ====== CHAT SYSTEM (T key or button to toggle, multiplayer only) ====== -->
         <!-- Chat toggle button -->
         <button id="chat-toggle-btn" class="hidden" style="
-            position: absolute; bottom: 20px; left: 20px;
+            position: absolute; bottom: 20px; right: 20px;
             z-index: 60;
             background: rgba(0,0,0,0.7);
             border: 2px solid #39ff14;
@@ -380,7 +433,7 @@
         ">💬</button>
         <!-- Chat key hint -->
         <div id="chat-key-hint" class="hidden" style="
-            position: absolute; bottom: 75px; left: 20px;
+            position: absolute; bottom: 75px; right: 20px;
             z-index: 59;
             color: rgba(57,255,20,0.6);
             font-size: 0.68rem;
@@ -388,7 +441,7 @@
         ">[T] Chat</div>
         <!-- Chat window -->
         <div id="chat-container" class="hidden" style="
-            position: absolute; bottom: 80px; left: 20px;
+            position: absolute; bottom: 80px; right: 20px;
             z-index: 60;
             width: 310px; height: 260px;
             background: rgba(0,0,0,0.88);
