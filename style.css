@@ -56,9 +56,19 @@ canvas {
     pointer-events: auto;
 }
 
-.screen.hidden {
+.hidden {
     display: none !important;
 }
+
+.chat-msg {
+    background: rgba(57, 255, 20, 0.1);
+    padding: 5px 8px;
+    border-radius: 5px;
+    word-wrap: break-word;
+}
+.chat-msg.self { border-left: 3px solid #39ff14; }
+.chat-msg.other { border-left: 3px solid #ff003c; }
+
 
 /* Main menu has semi-transparent overlay */
 #main-menu {
@@ -857,8 +867,8 @@ h1, h2, h3, .label {
     75% { transform: translateX(5px); }
 }
 
- 
- 
+
+
 /* Mecha Arms Expandable */
 .expandable {
     cursor: pointer;
@@ -1036,3 +1046,63 @@ h1, h2, h3, .label {
     background: var(--bg);
 }
 
+
+.loader-spinner {
+    border: 8px solid rgba(0, 243, 255, 0.2);
+    border-top: 8px solid var(--neon-cyan);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    box-shadow: 0 0 15px var(--neon-cyan);
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+#countdown-screen.fade-out {
+    animation: fadeOutScale 0.5s forwards;
+}
+@keyframes fadeOutScale {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+
+.mythic-item {
+    border: 2px solid #ffaa00 !important;
+    box-shadow: 0 0 15px #ffaa00, inset 0 0 10px rgba(255,170,0,0.3) !important;
+    background: linear-gradient(135deg, rgba(255,170,0,0.1), rgba(0,0,0,0.8)) !important;
+    animation: mythicGlow 3s infinite alternate;
+}
+
+@keyframes mythicGlow {
+    0% { box-shadow: 0 0 10px #ffaa00, inset 0 0 5px rgba(255,170,0,0.2); }
+    100% { box-shadow: 0 0 25px #ffaa00, inset 0 0 15px rgba(255,170,0,0.5); }
+}
+
+.mythic-tag {
+    display: inline-block;
+    background: linear-gradient(90deg, #ffaa00, #ffea00);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    text-shadow: none;
+    animation: mythicPulse 1s infinite alternate;
+}
+
+@keyframes mythicPulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+.mythic-btn {
+    border-color: #ffaa00 !important;
+    color: #ffaa00 !important;
+    box-shadow: 0 0 10px #ffaa00 !important;
+}
+.mythic-btn:hover {
+    background: rgba(255,170,0,0.2) !important;
+    box-shadow: 0 0 20px #ffaa00 !important;
+}

@@ -6,83 +6,6 @@
     <title>Mecho Chameleon</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Inline critical CSS to bypass cache */
-        #chat-container {
-            position: absolute;
-            top: 60px;
-            right: 20px;
-            width: 300px;
-            height: 400px;
-            background: rgba(0,0,0,0.85);
-            border: 2px solid #39ff14;
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            box-shadow: 0 0 15px rgba(57,255,20,0.3);
-            backdrop-filter: blur(5px);
-        }
-        #chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .chat-msg {
-            background: rgba(57,255,20,0.1);
-            padding: 5px 8px;
-            border-radius: 5px;
-            word-wrap: break-word;
-        }
-        .chat-msg.self { border-left: 3px solid #39ff14; }
-        .chat-msg.other { border-left: 3px solid #ff003c; }
-        #chat-input-container {
-            display: flex;
-            border-top: 1px solid #39ff14;
-            padding: 5px;
-        }
-        #chat-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #39ff14;
-            outline: none;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 5px;
-        }
-        #chat-send-btn {
-            background: #39ff14;
-            color: black;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            padding: 0 15px;
-            border-radius: 3px;
-        }
-        #chat-toggle-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid #39ff14;
-            color: #39ff14;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            cursor: pointer;
-            z-index: 1001;
-            box-shadow: 0 0 10px rgba(57,255,20,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
         /* Fixed CSS Nesting Issue & Mythic/Godly Styles */
         .shop-item.mythic { border: 2px solid #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.3); }
         .shop-item.mythic:hover { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.8); }
@@ -175,7 +98,7 @@
             <!-- Auto-Aim Toggle (Bottom Left) -->
             <div id="auto-aim-container" class="hidden">
                 <button id="auto-aim-btn" class="neon-button small-btn active">AUTO-AIM: ON</button>
-                <div class="aim-hint">Nhấn SHIFT để bắn</div>
+                <div class="aim-hint">Chuột trái: Bắn thủ công | Chuột phải: Bắn lưỡi</div>
             </div>
 
             <div id="upgrade-notification" class="hidden"></div>
