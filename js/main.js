@@ -178,6 +178,11 @@ window.addEventListener('mouseup', e => {
     if (e.button === 0) mouse.down = false;
     if (e.button === 2) mouse.rightDown = false;
 });
+window.addEventListener('contextmenu', e => {
+    e.preventDefault();
+});
+
+
 
 
 // ==========================
