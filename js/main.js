@@ -1319,22 +1319,6 @@ if (statsToggleBtn) {
     statsToggleBtn.addEventListener('touchstart', toggleStats);
 }
 
-const chatToggleBtn = document.getElementById('chat-toggle-btn');
-if (chatToggleBtn) {
-    const toggleChat = (e) => {
-        if (e) { e.preventDefault(); e.target.blur(); }
-        const chatContainer = document.getElementById('chat-container');
-        const chatInput = document.getElementById('chat-input');
-        if (chatContainer) {
-            const wasHidden = chatContainer.classList.contains('hidden');
-            chatContainer.classList.toggle('hidden');
-            if (wasHidden && chatInput) chatInput.focus();
-        }
-    };
-    chatToggleBtn.addEventListener('click', toggleChat);
-    chatToggleBtn.addEventListener('touchstart', toggleChat);
-}
-
 victoryRestartBtn.addEventListener('click', (e) => {
     e.target.blur();
     if (gameState === 'playing') return;
@@ -1822,8 +1806,17 @@ function toggleChat(forceOpen) {
     }
 }
 
-if (chatToggleBtn && chatContainer) {
-    chatToggleBtn.addEventListener("click", () => toggleChat());
+if (chatToggleBtn) {
+    chatToggleBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.target.blur();
+        toggleChat();
+    });
+    chatToggleBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        e.target.blur();
+        toggleChat();
+    });
 }
 
 // Close chat on ESC (when chat-input is focused)
