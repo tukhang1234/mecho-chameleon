@@ -1109,6 +1109,12 @@ playBtn.addEventListener('click', (e) => {
     if (gameState === 'playing') return;
     mpMode = null; playerIndex = 0; opponentState = null;
     if (!audio) audio = new AudioSystem();
+
+    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isTouchDevice && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => console.log('Fullscreen failed', err));
+    }
+
     showLoadingScreen('LOADING MATCH...', 1000, () => {
         initGame();
     });
@@ -1304,11 +1310,29 @@ if (exitGameBtn) {
 }
 const statsToggleBtn = document.getElementById('stats-toggle-btn');
 if (statsToggleBtn) {
-    statsToggleBtn.addEventListener('click', (e) => {
-        e.target.blur();
+    const toggleStats = (e) => {
+        if (e) { e.preventDefault(); e.target.blur(); }
         const panel = document.getElementById('stats-panel');
         if (panel) panel.classList.toggle('hidden');
-    });
+    };
+    statsToggleBtn.addEventListener('click', toggleStats);
+    statsToggleBtn.addEventListener('touchstart', toggleStats);
+}
+
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+if (chatToggleBtn) {
+    const toggleChat = (e) => {
+        if (e) { e.preventDefault(); e.target.blur(); }
+        const chatContainer = document.getElementById('chat-container');
+        const chatInput = document.getElementById('chat-input');
+        if (chatContainer) {
+            const wasHidden = chatContainer.classList.contains('hidden');
+            chatContainer.classList.toggle('hidden');
+            if (wasHidden && chatInput) chatInput.focus();
+        }
+    };
+    chatToggleBtn.addEventListener('click', toggleChat);
+    chatToggleBtn.addEventListener('touchstart', toggleChat);
 }
 
 victoryRestartBtn.addEventListener('click', (e) => {
@@ -1359,12 +1383,20 @@ backFromMode.addEventListener('click', (e) => {
 coopBtn.addEventListener('click', (e) => {
     if (e) e.target.blur();
     modeSelectScr.classList.add('hidden');
+    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isTouchDevice && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => console.log('Fullscreen failed', err));
+    }
     findMatch('coop');
 });
 
 pvpBtn.addEventListener('click', (e) => {
     if (e) e.target.blur();
     modeSelectScr.classList.add('hidden');
+    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isTouchDevice && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => console.log('Fullscreen failed', err));
+    }
     findMatch('pvp');
 });
 
