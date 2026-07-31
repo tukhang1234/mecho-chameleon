@@ -19,6 +19,9 @@ const finalScoreEl = document.getElementById('finalScore');
 const finalGearsEl = document.getElementById('finalGears');
 const finalWaveEl = document.getElementById('finalWave');
 const menuFromGameOverBtn = document.getElementById('menu-from-gameover-btn');
+// Titan Energy UI
+const energyBarWrapper = document.getElementById('energy-bar-wrapper');
+const energyBarEl = document.getElementById('energyBar');
 
 // Multiplayer UI elements
 const mpBtn = document.getElementById('mp-btn');
@@ -73,8 +76,10 @@ let enemiesLeft = 0;
 let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
 coins += 100000; // Cheat: add 100k
 localStorage.setItem('chameleon_coins', coins.toString());
-let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
-let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, core: false };
+let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, arms_m5: false, arms_m6: false, core: false, titan_blue: false };
+let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, arms_m5: false, arms_m6: false, core: false, titan_blue: false };
+// Patch old saves that might be missing new fields
+if (!('titan_blue' in shopInventory)) { shopInventory.titan_blue = false; equippedItems.titan_blue = false; }
 
 let bossAlive = false;
 let boss = null;
@@ -205,6 +210,8 @@ function updateShopUI() {
     shopCoinsDisplay.innerText = coins;
     const armsDisp = document.getElementById('armsCoinsDisplay');
     if (armsDisp) armsDisp.innerText = coins;
+    const titanDisp = document.getElementById('titanCoinsDisplay');
+    if (titanDisp) titanDisp.innerText = coins;
 
     const allItems = document.querySelectorAll('.shop-item[data-item]');
     allItems.forEach(el => {
@@ -247,6 +254,7 @@ function initGame() {
 
     score = 0; gears = 0; maxPlayerHealth = 100;
     if (equippedItems.armor) maxPlayerHealth += 50;
+    if (equippedItems.titan_blue) maxPlayerHealth += 200; // Titan: rất nhiều máu
     playerHealth = maxPlayerHealth;
     waveNumber = 0; waveActive = false; waveTimer = 0;
     boss = null; bossAlive = false;
@@ -268,6 +276,15 @@ function initGame() {
             autoAimContainer.classList.remove('hidden');
         } else {
             autoAimContainer.classList.add('hidden');
+        }
+    }
+
+    // Titan Energy Bar visibility
+    if (energyBarWrapper) {
+        if (equippedItems.titan_blue) {
+            energyBarWrapper.classList.remove('hidden');
+        } else {
+            energyBarWrapper.classList.add('hidden');
         }
     }
 
@@ -454,6 +471,20 @@ function updateHUD() {
         const pct = ((player.maxStealthCooldown - player.stealthCooldown) / player.maxStealthCooldown * 100) | 0;
         stealthBar.innerText = pct + '%';
         stealthBar.classList.remove('ready');
+    }
+
+    // Titan Energy Bar update
+    if (energyBarEl && player.equipped && player.equipped.titan_blue) {
+        const epct = Math.max(0, (player.energy / player.maxEnergy) * 100);
+        energyBarEl.style.width = epct + '%';
+        // Glow effect: red when low
+        if (epct < 20) {
+            energyBarEl.style.background = 'linear-gradient(90deg, #880000, #ff2200)';
+            energyBarEl.style.boxShadow = '0 0 12px #ff2200';
+        } else {
+            energyBarEl.style.background = 'linear-gradient(90deg, #0066ff, #00aaff)';
+            energyBarEl.style.boxShadow = '0 0 12px #00aaff';
+        }
     }
 
     // Update Stats Panel (now includes score + wave)
@@ -721,6 +752,21 @@ function checkCoopClientCollisions(tip) {
 
 function hitPlayer(amount) {
     if (player.invulnTimer > 0) return;
+    
+    // Absolute defense logic (Model 6 Defend Drone)
+    if (player.drones) {
+        const defendDrone = player.drones.find(d => d.type === 'm6_defend');
+        if (defendDrone && defendDrone.shieldActive) {
+            defendDrone.shieldActive = false;
+            defendDrone.shieldRecharge = 180; // 3 seconds recharge
+            if (typeof particles !== 'undefined' && particles.particles.length < MAX_PARTICLES) {
+                particles.burst(player.x, player.y, '#00ff00', 20, 0, 0);
+            }
+            if (typeof audio !== 'undefined') audio.playSound('stealth');
+            return; 
+        }
+    }
+
     player.invulnTimer = 30; // 0.5s invulnerability
 
     playerHealth -= amount;
@@ -733,6 +779,11 @@ function hitPlayer(amount) {
 
 function onEnemyDeath(e, idx) {
     score += e.isBoss ? (500 + waveNumber * 100) : Math.floor(60 * (e.radius / 12));
+
+    // Titan: Restore 10 energy on kill
+    if (player.equipped && player.equipped.titan_blue) {
+        player.energy = Math.min(player.maxEnergy, (player.energy || 0) + 10);
+    }
 
     if (!e.isBoss && e.radius > 12) {
         if (e.radius === 36 && Math.random() < 0.35) {
@@ -1031,6 +1082,29 @@ if (mechaArmsCat) {
     });
 }
 
+// Titan Hangar panel
+const titanCat = document.getElementById('titan-category');
+const titanPanel = document.getElementById('titan-panel');
+const backFromTitan = document.getElementById('back-from-titan');
+const titanCoinsDisplay = document.getElementById('titanCoinsDisplay');
+
+if (titanCat && titanPanel) {
+    titanCat.addEventListener('click', () => {
+        shopScreen.classList.add('hidden');
+        titanPanel.classList.remove('hidden');
+        if (titanCoinsDisplay) titanCoinsDisplay.innerText = coins;
+        updateShopUI();
+    });
+}
+if (backFromTitan) {
+    backFromTitan.addEventListener('click', (e) => {
+        e.target.blur();
+        titanPanel.classList.add('hidden');
+        shopScreen.classList.remove('hidden');
+        updateShopUI();
+    });
+}
+
 if (backFromArms) {
     backFromArms.addEventListener('click', (e) => {
         e.target.blur();
@@ -1068,7 +1142,17 @@ document.addEventListener('click', (e) => {
                 coins -= price;
                 shopInventory[itemType] = true;
                 // Auto-equip if bought, unequip other arms if it's an arm model
+                // Titan and arms are mutually exclusive
                 if (itemType.startsWith('arms_')) {
+                    equippedItems.arms_m1 = false;
+                    equippedItems.arms_m2 = false;
+                    equippedItems.arms_m3 = false;
+                    equippedItems.arms_m4 = false;
+                    equippedItems.arms_m5 = false;
+                    equippedItems.arms_m6 = false;
+                    equippedItems.titan_blue = false; // arms and titan are mutually exclusive
+                } else if (itemType === 'titan_blue') {
+                    // Titan unequips all arms
                     equippedItems.arms_m1 = false;
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
@@ -1093,6 +1177,14 @@ document.addEventListener('click', (e) => {
             // Toggle Equip
             if (!equippedItems[itemType]) {
                 if (itemType.startsWith('arms_')) {
+                    equippedItems.arms_m1 = false;
+                    equippedItems.arms_m2 = false;
+                    equippedItems.arms_m3 = false;
+                    equippedItems.arms_m4 = false;
+                    equippedItems.arms_m5 = false;
+                    equippedItems.arms_m6 = false;
+                    equippedItems.titan_blue = false;
+                } else if (itemType === 'titan_blue') {
                     equippedItems.arms_m1 = false;
                     equippedItems.arms_m2 = false;
                     equippedItems.arms_m3 = false;
@@ -1651,7 +1743,7 @@ function appendChatMessage(sender, text, type) {
     msgDiv.classList.add("chat-msg");
     if (type) msgDiv.classList.add(type);
     const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    msgDiv.innerHTML = `<span style="color:#555;font-size:0.75rem;">${time}</span> <span style="color:${type==='self'?'#39ff14':'#ff6688'};">[${sender}]:</span> ${text}`;
+    msgDiv.innerHTML = `<span style="color:#555;font-size:0.75rem;">${time}</span> <span style="color:${type === 'self' ? '#39ff14' : '#ff6688'};">[${sender}]:</span> ${text}`;
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
