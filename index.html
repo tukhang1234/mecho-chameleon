@@ -123,6 +123,7 @@
                     <button id="play-btn" class="neon-button">▶ PLAY</button>
                     <button id="mp-btn" class="neon-button mp-button">🌐 MULTIPLAYER</button>
                     <button id="shop-btn" class="neon-button shop-button">🛒 SHOP</button>
+                    <button id="settings-btn" class="neon-button" style="border-color: #aaa; color: #aaa; box-shadow: 0 0 10px rgba(170,170,170,0.5);">⚙ SETTINGS</button>
                 </div>
 
                 <div class="coins-display menu-coins">
@@ -252,6 +253,27 @@
                 </div>
                 <button id="restart-btn" class="neon-button">↺ RESTART</button>
                 <button id="menu-from-gameover-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
+            </div>
+
+            <!-- ====== SETTINGS SCREEN ====== -->
+            <div id="settings-screen" class="screen hidden">
+                <h1 class="neon-text title">⚙ SETTINGS</h1>
+                <p class="subtitle">Chọn chế độ điều khiển</p>
+                
+                <div class="settings-container" style="background: rgba(0,0,0,0.7); border: 2px solid #555; border-radius: 12px; padding: 25px; margin: 20px 0; display: flex; gap: 20px;">
+                    <div id="mode-pc-btn" class="mode-card neon-button" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; border-color: #00f3ff; color: #00f3ff;">
+                        <span style="font-size: 3rem; margin-bottom: 10px;">🖱️</span>
+                        <h3 style="margin: 0;">PC MODE</h3>
+                        <p style="font-size: 0.8rem; color: #ccc; margin-top: 10px;">Bàn phím (WASD) & Chuột</p>
+                    </div>
+                    <div id="mode-mobile-btn" class="mode-card neon-button" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; border-color: #555; color: #aaa;">
+                        <span style="font-size: 3rem; margin-bottom: 10px;">📱</span>
+                        <h3 style="margin: 0;">MOBILE MODE</h3>
+                        <p style="font-size: 0.8rem; color: #ccc; margin-top: 10px;">Joystick & Touch Controls</p>
+                    </div>
+                </div>
+                
+                <button id="back-from-settings" class="back-btn">← Quay lại Menu</button>
             </div>
 
             <!-- ====== SHOP SCREEN ====== -->
@@ -570,6 +592,25 @@
             </div>
 
         </div><!-- /ui-layer -->
+
+        <!-- ====== MOBILE CONTROLS ====== -->
+        <div id="mobile-controls" class="hidden">
+            <div id="joystick-left" class="joystick-area">
+                <div class="joystick-base"></div>
+                <div class="joystick-stick"></div>
+            </div>
+            
+            <div class="mobile-action-buttons">
+                <button id="mobile-stealth-btn" class="mobile-btn">👁️ Stealth</button>
+                <button id="mobile-tongue-btn" class="mobile-btn">👅 Tongue</button>
+            </div>
+
+            <div id="joystick-right" class="joystick-area">
+                <div class="joystick-base"></div>
+                <div class="joystick-stick"></div>
+            </div>
+        </div>
+        
     </div><!-- /game-container -->
 
     <script src="/socket.io/socket.io.js"></script>
