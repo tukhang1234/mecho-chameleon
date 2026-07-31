@@ -121,28 +121,27 @@ class Player {
         const isTitan = this.equipped && this.equipped.titan_blue;
         const currentSpeed = isTitan ? 1.8 : this.speed;
 
-        if (typeof controlMode !== 'undefined' && controlMode === 'mobile' && typeof joystickLeft !== 'undefined') {
-            if (joystickLeft.active) {
-                dx = joystickLeft.dx;
-                dy = joystickLeft.dy;
-                this.isMoving = true;
-            }
-            if (joystickRight && joystickRight.active) {
-                this.angle = joystickRight.angle;
-                mouse.x = this.x + Math.cos(this.angle) * 100;
-                mouse.y = this.y + Math.sin(this.angle) * 100;
-                mouse.down = true;
-            } else {
-                // Keep the last angle if joystick right is released, but stop firing
-                mouse.down = false;
-            }
-        } else {
-            if (keys['w'] || keys['ArrowUp']) { dy -= 1; this.isMoving = true; }
-            if (keys['s'] || keys['ArrowDown']) { dy += 1; this.isMoving = true; }
-            if (keys['a'] || keys['ArrowLeft']) { dx -= 1; this.isMoving = true; }
-            if (keys['d'] || keys['ArrowRight']) { dx += 1; this.isMoving = true; }
-            if (dx !== 0 && dy !== 0) { const l = Math.hypot(dx, dy); dx /= l; dy /= l; }
-            this.angle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+        if (keys['w'] || keys['ArrowUp']) { dy -= 1; this.isMoving = true; }
+        if (keys['s'] || keys['ArrowDown']) { dy += 1; this.isMoving = true; }
+        if (keys['a'] || keys['ArrowLeft']) { dx -= 1; this.isMoving = true; }
+        if (keys['d'] || keys['ArrowRight']) { dx += 1; this.isMoving = true; }
+        if (dx !== 0 && dy !== 0) { const l = Math.hypot(dx, dy); dx /= l; dy /= l; }
+
+        if (typeof joystickLeft !== 'undefined' && joystickLeft && joystickLeft.active) {
+            dx = joystickLeft.dx;
+            dy = joystickLeft.dy;
+            this.isMoving = true;
+        }
+
+        this.angle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+
+        if (typeof joystickRight !== 'undefined' && joystickRight && joystickRight.active) {
+            this.angle = joystickRight.angle;
+            mouse.x = this.x + Math.cos(this.angle) * 100;
+            mouse.y = this.y + Math.sin(this.angle) * 100;
+            mouse.down = true;
+        } else if (typeof joystickRight !== 'undefined' && joystickRight && !joystickRight.active && typeof controlMode !== 'undefined' && controlMode === 'mobile') {
+            mouse.down = false;
         }
 
         this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x + dx * currentSpeed));

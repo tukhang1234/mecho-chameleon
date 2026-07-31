@@ -276,7 +276,8 @@ function initGame() {
     syncFrame = 0;
     enemyNetIdCounter = 0;
 
-    if (controlMode === 'mobile') {
+    const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isTouchDevice || controlMode === 'mobile') {
         mobileControls.classList.remove('hidden');
         if (!joystickLeft) joystickLeft = new VirtualJoystick('joystick-left');
         if (!joystickRight) joystickRight = new VirtualJoystick('joystick-right');
