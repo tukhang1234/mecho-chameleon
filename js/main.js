@@ -35,6 +35,20 @@ const backFromShop = document.getElementById('back-from-shop');
 const menuCoinsDisplay = document.getElementById('menuCoinsDisplay');
 const shopCoinsDisplay = document.getElementById('shopCoinsDisplay');
 const shopItems = document.querySelectorAll('.shop-item');
+
+// Settings UI elements
+const settingsBtn = document.getElementById('settings-btn');
+const settingsScreen = document.getElementById('settings-screen');
+const backFromSettings = document.getElementById('back-from-settings');
+const modePcBtn = document.getElementById('mode-pc-btn');
+const modeMobileBtn = document.getElementById('mode-mobile-btn');
+const mobileControls = document.getElementById('mobile-controls');
+const mobileStealthBtn = document.getElementById('mobile-stealth-btn');
+const mobileTongueBtn = document.getElementById('mobile-tongue-btn');
+
+let controlMode = localStorage.getItem('chameleon_control') || 'pc';
+let joystickLeft = null;
+let joystickRight = null;
 const victoryScr = document.getElementById('victory-screen');
 const coopBtn = document.getElementById('coop-btn');
 const pvpBtn = document.getElementById('pvp-btn');
@@ -261,6 +275,14 @@ function initGame() {
     remoteEnemies = [];
     syncFrame = 0;
     enemyNetIdCounter = 0;
+
+    if (controlMode === 'mobile') {
+        mobileControls.classList.remove('hidden');
+        if (!joystickLeft) joystickLeft = new VirtualJoystick('joystick-left');
+        if (!joystickRight) joystickRight = new VirtualJoystick('joystick-right');
+    } else {
+        mobileControls.classList.add('hidden');
+    }
 
     gameState = 'playing';
     mainMenu.classList.add('hidden');
@@ -1037,6 +1059,50 @@ function showVictory() {
 // ==========================
 // BUTTON EVENTS
 // ==========================
+settingsBtn.addEventListener('click', (e) => {
+    e.target.blur();
+    mainMenu.classList.add('hidden');
+    settingsScreen.classList.remove('hidden');
+    if (controlMode === 'pc') {
+        modePcBtn.classList.add('selected');
+        modeMobileBtn.classList.remove('selected');
+    } else {
+        modeMobileBtn.classList.add('selected');
+        modePcBtn.classList.remove('selected');
+    }
+});
+
+backFromSettings.addEventListener('click', () => {
+    settingsScreen.classList.add('hidden');
+    mainMenu.classList.remove('hidden');
+});
+
+modePcBtn.addEventListener('click', () => {
+    controlMode = 'pc';
+    localStorage.setItem('chameleon_control', 'pc');
+    modePcBtn.classList.add('selected');
+    modeMobileBtn.classList.remove('selected');
+});
+
+modeMobileBtn.addEventListener('click', () => {
+    controlMode = 'mobile';
+    localStorage.setItem('chameleon_control', 'mobile');
+    modeMobileBtn.classList.add('selected');
+    modePcBtn.classList.remove('selected');
+});
+
+mobileStealthBtn.addEventListener('click', () => {
+    if (gameState === 'playing') {
+        keys[' '] = true;
+        setTimeout(() => { keys[' '] = false; }, 50);
+    }
+});
+
+mobileTongueBtn.addEventListener('mousedown', () => { if (gameState === 'playing') mouse.rightDown = true; });
+mobileTongueBtn.addEventListener('mouseup', () => { if (gameState === 'playing') mouse.rightDown = false; });
+mobileTongueBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (gameState === 'playing') mouse.rightDown = true; });
+mobileTongueBtn.addEventListener('touchend', (e) => { e.preventDefault(); if (gameState === 'playing') mouse.rightDown = false; });
+
 playBtn.addEventListener('click', (e) => {
     e.target.blur();
     if (gameState === 'playing') return;

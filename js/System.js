@@ -25,6 +25,8 @@ class ParticleSystem {
         }
     }
 
+
+
     // Emit directional burst (for tongue impact)
     burst(x, y, color, count, dirX, dirY) {
         for (let i = 0; i < count; i++) {
@@ -61,7 +63,7 @@ class ParticleSystem {
     draw(ctx) {
         for (const p of this.particles) {
             const alpha = p.life / p.maxLife;
-            
+
             // Draw trail
             if (p.trail.length > 1) {
                 ctx.beginPath();
@@ -86,7 +88,7 @@ class ParticleSystem {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.fillStyle = p.color;
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -224,7 +226,7 @@ class AudioSystem {
     // --- Music Engine ---
     stopMusic() {
         if (this.beatInterval) { clearInterval(this.beatInterval); this.beatInterval = null; }
-        this.musicNodes.forEach(n => { try { n.stop(); } catch(e){} });
+        this.musicNodes.forEach(n => { try { n.stop(); } catch (e) { } });
         this.musicNodes = [];
         this.musicMode = null;
         this.musicGeneration++;
@@ -305,8 +307,8 @@ class AudioSystem {
     _startGameDrums() {
         const BPM = 128;
         const interval = (60 / BPM / 4) * 1000; // 16th note interval
-        const pattern = [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,1,0]; // kick pattern
-        const snare  = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]; // snare on 2 and 4
+        const pattern = [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0]; // kick pattern
+        const snare = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]; // snare on 2 and 4
         let step = 0;
         const currentGen = this.musicGeneration;
 
@@ -397,19 +399,19 @@ class AudioSystem {
         const BPM = 128;
         const beat = 60 / BPM;
         const leadPattern = [
-            {note: 440, dur: beat*2}, {note: 0, dur: beat},
-            {note: 523, dur: beat*2}, {note: 0, dur: beat},
-            {note: 587, dur: beat*1}, {note: 523, dur: beat*1},
-            {note: 440, dur: beat*4}, {note: 0, dur: beat*2},
-            {note: 392, dur: beat*2}, {note: 0, dur: beat},
-            {note: 440, dur: beat*2}, {note: 0, dur: beat},
-            {note: 349, dur: beat*2}, {note: 392, dur: beat*2},
-            {note: 329, dur: beat*4}, {note: 0, dur: beat*4},
+            { note: 440, dur: beat * 2 }, { note: 0, dur: beat },
+            { note: 523, dur: beat * 2 }, { note: 0, dur: beat },
+            { note: 587, dur: beat * 1 }, { note: 523, dur: beat * 1 },
+            { note: 440, dur: beat * 4 }, { note: 0, dur: beat * 2 },
+            { note: 392, dur: beat * 2 }, { note: 0, dur: beat },
+            { note: 440, dur: beat * 2 }, { note: 0, dur: beat },
+            { note: 349, dur: beat * 2 }, { note: 392, dur: beat * 2 },
+            { note: 329, dur: beat * 4 }, { note: 0, dur: beat * 4 },
         ];
 
         let t = this.audioCtx.currentTime + 1; // slight delay before lead starts
         const currentGen = this.musicGeneration;
-        
+
         const scheduleNext = () => {
             if (this.musicGeneration !== currentGen) return;
             leadPattern.forEach(event => {
@@ -443,8 +445,8 @@ class AudioSystem {
     _startBossDrums() {
         const BPM = 160;
         const interval = (60 / BPM / 4) * 1000;
-        const pattern = [1,0,1,0, 0,0,1,0, 1,0,0,1, 0,0,1,0]; 
-        const snare   = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0];
+        const pattern = [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0];
+        const snare = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
         let step = 0;
         const currentGen = this.musicGeneration;
 
@@ -527,15 +529,15 @@ class AudioSystem {
         const BPM = 160;
         const beat = 60 / BPM;
         const leadPattern = [
-            {note: 440, dur: beat*1}, {note: 523, dur: beat*1}, {note: 659, dur: beat*2},
-            {note: 523, dur: beat*1}, {note: 587, dur: beat*1}, {note: 783, dur: beat*2},
-            {note: 440, dur: beat*1}, {note: 523, dur: beat*1}, {note: 880, dur: beat*2},
-            {note: 783, dur: beat*2}, {note: 659, dur: beat*2}
+            { note: 440, dur: beat * 1 }, { note: 523, dur: beat * 1 }, { note: 659, dur: beat * 2 },
+            { note: 523, dur: beat * 1 }, { note: 587, dur: beat * 1 }, { note: 783, dur: beat * 2 },
+            { note: 440, dur: beat * 1 }, { note: 523, dur: beat * 1 }, { note: 880, dur: beat * 2 },
+            { note: 783, dur: beat * 2 }, { note: 659, dur: beat * 2 }
         ];
 
         let t = this.audioCtx.currentTime + 1;
         const currentGen = this.musicGeneration;
-        
+
         const scheduleNext = () => {
             if (this.musicGeneration !== currentGen) return;
             leadPattern.forEach(event => {
@@ -561,5 +563,95 @@ class AudioSystem {
             }, (remaining - 1) * 1000);
         };
         scheduleNext();
+    }
+}
+
+// ==========================
+// VIRTUAL JOYSTICK (MOBILE)
+// ==========================
+class VirtualJoystick {
+    constructor(elementId) {
+        this.container = document.getElementById(elementId);
+        this.stick = this.container.querySelector('.joystick-stick');
+        this.active = false;
+        this.dx = 0;
+        this.dy = 0;
+        this.distance = 0;
+        this.angle = 0;
+        this.maxDist = 50; // max radius for the stick
+        
+        this.centerX = 0;
+        this.centerY = 0;
+        this.touchId = null;
+
+        this._bindEvents();
+    }
+
+    _bindEvents() {
+        this.container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            this.touchId = touch.identifier;
+            this.active = true;
+            
+            const rect = this.container.getBoundingClientRect();
+            this.centerX = rect.left + rect.width / 2;
+            this.centerY = rect.top + rect.height / 2;
+            
+            this._updateStick(touch.clientX, touch.clientY);
+        }, {passive: false});
+
+        this.container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!this.active) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === this.touchId) {
+                    this._updateStick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                    break;
+                }
+            }
+        }, {passive: false});
+
+        const handleEnd = (e) => {
+            if (!this.active) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === this.touchId) {
+                    this._resetStick();
+                    break;
+                }
+            }
+        };
+
+        this.container.addEventListener('touchend', handleEnd);
+        this.container.addEventListener('touchcancel', handleEnd);
+    }
+
+    _updateStick(x, y) {
+        let diffX = x - this.centerX;
+        let diffY = y - this.centerY;
+        
+        this.distance = Math.hypot(diffX, diffY);
+        this.angle = Math.atan2(diffY, diffX);
+        
+        if (this.distance > this.maxDist) {
+            diffX = Math.cos(this.angle) * this.maxDist;
+            diffY = Math.sin(this.angle) * this.maxDist;
+            this.distance = this.maxDist;
+        }
+
+        // dx and dy normalized from -1 to 1
+        this.dx = diffX / this.maxDist;
+        this.dy = diffY / this.maxDist;
+
+        this.stick.style.transform = `translate(calc(-50% + ${diffX}px), calc(-50% + ${diffY}px))`;
+    }
+
+    _resetStick() {
+        this.active = false;
+        this.dx = 0;
+        this.dy = 0;
+        this.distance = 0;
+        this.touchId = null;
+        this.stick.style.transform = `translate(-50%, -50%)`;
     }
 }
