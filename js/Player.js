@@ -258,8 +258,11 @@ class Player {
             // Tính toán Matrix 2D chuyển đổi Local sang World (Tính luôn góc xoay của thân)
             const barrelX = this.x + scale * (gunX_local * Math.sin(this.angle) + gunY_local * Math.cos(this.angle));
             const barrelY = this.y + scale * (-gunX_local * Math.cos(this.angle) + gunY_local * Math.sin(this.angle));
+            
+            // Tính toán hướng ngắm về phía chuột
+            const aimAngle = Math.atan2(mouse.y - barrelY, mouse.x - barrelX);
 
-            this.bullets.push(new ExplosiveBullet(barrelX, barrelY, Math.cos(this.angle) * 24, Math.sin(this.angle) * 24, '#00f3ff', 100, 16));
+            this.bullets.push(new ExplosiveBullet(barrelX, barrelY, Math.cos(aimAngle) * 24, Math.sin(aimAngle) * 24, '#00f3ff', 100, 16));
             this.railgunRecoil = 35;
             if (typeof screenShake !== 'undefined') screenShake.trigger(5, 5);
             this.titanGunCd = 12;
