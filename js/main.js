@@ -422,15 +422,19 @@ function spawnEnemy(wave) {
     let type = 'seeker';
     
     const r = Math.random();
-    if (wave >= 6) {
+    if (wave >= 20) {
         if (r < 0.2) type = 'tank';
         else if (r < 0.45) type = 'shooter';
         else if (r < 0.7) type = 'dasher';
-    } else if (wave >= 4) {
-        if (r < 0.25) type = 'shooter';
-        else if (r < 0.5) type = 'dasher';
-    } else if (wave >= 2) {
-        if (r < 0.3) type = 'dasher';
+    } else if (wave >= 15) {
+        if (r < 0.1) type = 'tank';
+        else if (r < 0.3) type = 'shooter';
+        else if (r < 0.6) type = 'dasher';
+    } else if (wave >= 10) {
+        if (r < 0.2) type = 'shooter';
+        else if (r < 0.4) type = 'dasher';
+    } else if (wave >= 5) {
+        if (r < 0.2) type = 'dasher';
     }
     
     const sizes = [12, 12, 24, 24, 36];
@@ -440,6 +444,15 @@ function spawnEnemy(wave) {
     else if (type === 'dasher') radius = 18;
 
     const e = new Enemy(x, y, spd, type, radius);
+    
+    // Scale stats every 10 waves
+    const scale = Math.floor(wave / 10);
+    if (scale > 0) {
+        e.maxHp *= (1 + scale * 0.5);
+        e.hp = e.maxHp;
+        e.damage *= (1 + scale * 0.2);
+    }
+    
     e.netId = ++enemyNetIdCounter;
     enemies.push(e);
 }
@@ -541,7 +554,19 @@ function updateHUD() {
     const statScore = document.getElementById('stat-score');
     const statWave = document.getElementById('stat-wave');
     if (statHp) statHp.innerText = `${Math.floor(playerHealth)}/${maxPlayerHealth}`;
-    if (statDmg) statDmg.innerText = `${player.finalDamage ? player.finalDamage : 40}x`;
+    
+    let totalDps = player.finalDamage || 40;
+    if (typeof equippedItems !== 'undefined') {
+        if (equippedItems.arms_m1) totalDps += Math.round((player.finalDamage || 40) * 0.4) * 3;
+        if (equippedItems.arms_m3) totalDps += Math.round((player.finalDamage || 40) * 0.7);
+        if (equippedItems.arms_m5) totalDps += Math.round((player.finalDamage || 40) * 0.8) * 2;
+    }
+    if (typeof isTitan !== 'undefined' && isTitan) {
+        totalDps += 300; // Titan Hammer + Fire Breath
+    }
+    
+    if (statDmg) statDmg.innerText = `${totalDps}`;
+    
     if (statSpd) statSpd.innerText = `${player.speed.toFixed(1)}`;
     if (statCd) statCd.innerText = `${player.armsCooldown || 0}f`;
     if (statStealth) statStealth.innerText = `${Math.floor(player.stealthLevel * 100)}%`;
