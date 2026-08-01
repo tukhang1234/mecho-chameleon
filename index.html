@@ -203,6 +203,12 @@
             <div id="mode-select" class="screen hidden">
                 <h1 class="neon-text title">MULTI<br>PLAYER</h1>
                 <p class="subtitle">Chọn chế độ chơi</p>
+                <div style="margin-bottom: 20px;">
+                    <label style="color: #00f3ff; font-family: 'Orbitron', monospace; margin-right: 10px;">SỐ NGƯỜI CHƠI (MIN & MAX 2):</label>
+                    <select id="player-count-select" style="background: rgba(0,0,0,0.8); color: #fff; border: 1px solid #00f3ff; padding: 5px; font-family: 'Orbitron', monospace; border-radius: 5px; outline: none; cursor: pointer;">
+                        <option value="2" selected>2 Players</option>
+                    </select>
+                </div>
                 <div class="mode-buttons">
                     <button id="coop-btn" class="neon-button mode-card">
                         <span class="mode-icon">🤝</span>
@@ -257,23 +263,21 @@
 
             <!-- ====== SETTINGS SCREEN ====== -->
             <div id="settings-screen" class="screen hidden">
-                <h1 class="neon-text title">⚙ SETTINGS</h1>
-                <p class="subtitle">Chọn chế độ điều khiển</p>
+                <h1 class="neon-text title">⚙ AUDIO SETTINGS</h1>
+                <p class="subtitle">Điều chỉnh âm lượng game</p>
                 
-                <div class="settings-container" style="background: rgba(0,0,0,0.7); border: 2px solid #555; border-radius: 12px; padding: 25px; margin: 20px 0; display: flex; gap: 20px;">
-                    <div id="mode-pc-btn" class="mode-card neon-button" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; border-color: #00f3ff; color: #00f3ff;">
-                        <span style="font-size: 3rem; margin-bottom: 10px;">🖱️</span>
-                        <h3 style="margin: 0;">PC MODE</h3>
-                        <p style="font-size: 0.8rem; color: #ccc; margin-top: 10px;">Bàn phím (WASD) & Chuột</p>
+                <div class="settings-container" style="background: rgba(0,0,0,0.7); border: 2px solid #555; border-radius: 12px; padding: 25px; margin: 20px auto; width: 320px; display: flex; flex-direction: column; gap: 20px; text-align: left;">
+                    <div>
+                        <label style="color: #00f3ff; font-family: 'Orbitron', monospace; font-size: 0.9rem;">🎵 Nhạc Nền (Music): <span id="bgm-val">100%</span></label>
+                        <input type="range" id="bgm-slider" min="0" max="1" step="0.01" value="0.3" style="width: 100%; margin-top: 10px; accent-color: #00f3ff; cursor: pointer;">
                     </div>
-                    <div id="mode-mobile-btn" class="mode-card neon-button" style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; border-color: #555; color: #aaa;">
-                        <span style="font-size: 3rem; margin-bottom: 10px;">📱</span>
-                        <h3 style="margin: 0;">MOBILE MODE</h3>
-                        <p style="font-size: 0.8rem; color: #ccc; margin-top: 10px;">Joystick & Touch Controls</p>
+                    <div>
+                        <label style="color: #39ff14; font-family: 'Orbitron', monospace; font-size: 0.9rem;">🔊 Hiệu Ứng (SFX): <span id="sfx-val">100%</span></label>
+                        <input type="range" id="sfx-slider" min="0" max="1" step="0.01" value="0.5" style="width: 100%; margin-top: 10px; accent-color: #39ff14; cursor: pointer;">
                     </div>
                 </div>
                 
-                <button id="back-from-settings" class="back-btn">← Quay lại Menu</button>
+                <button id="back-from-settings" class="back-btn">← Quay lại</button>
             </div>
 
             <!-- ====== SHOP SCREEN ====== -->
@@ -531,10 +535,25 @@
             border: 1.5px solid #00f3ff;
             color: #00f3ff;
             cursor: pointer;
+            pointer-events: auto;
             font-family: 'Orbitron', monospace;
             box-shadow: 0 0 10px rgba(0,243,255,0.3);
             transition: all 0.2s;
         ">📊 STATS [C]</button>
+            <button id="ingame-settings-btn" class="hidden" style="
+            z-index: 51;
+            padding: 7px 14px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.6);
+            border: 1.5px solid #aaa;
+            color: #aaa;
+            cursor: pointer;
+            pointer-events: auto;
+            font-family: 'Orbitron', monospace;
+            box-shadow: 0 0 10px rgba(170,170,170,0.3);
+            transition: all 0.2s;
+        ">⚙ AUDIO</button>
 
             <!-- ====== CHAT SYSTEM (T key or button to toggle, multiplayer only) ====== -->
             <!-- Chat toggle button -->
@@ -548,6 +567,7 @@
             color: #39ff14;
             font-size: 1.4rem;
             cursor: pointer;
+            pointer-events: auto;
             box-shadow: 0 0 12px rgba(57,255,20,0.4);
             transition: all 0.2s;
             display: flex; align-items: center; justify-content: center;
@@ -618,6 +638,7 @@
     <script src="js/Collectible.js"></script>
     <script src="js/Enemy.js"></script>
     <script src="js/Player.js"></script>
+    <script src="js/Planet.js"></script>
     <script src="js/main.js"></script>
 </body>
 
