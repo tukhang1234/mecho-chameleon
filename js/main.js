@@ -71,6 +71,7 @@ let animId;
 // Entities
 let player, particles, screenShake, audio;
 let enemies = [];
+let enemyBullets = [];
 let collectibles = [];
 let powerups = [];
 
@@ -416,8 +417,29 @@ function spawnEnemy(wave) {
     else if (side === 1) { x = canvas.width + 40; y = Math.random() * canvas.height; }
     else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + 40; }
     else { x = -40; y = Math.random() * canvas.height; }
+    
     const spd = 1.5 + wave * 0.08 + Math.random() * 1.2;
-    const e = new Enemy(x, y, spd);
+    let type = 'seeker';
+    
+    const r = Math.random();
+    if (wave >= 6) {
+        if (r < 0.2) type = 'tank';
+        else if (r < 0.45) type = 'shooter';
+        else if (r < 0.7) type = 'dasher';
+    } else if (wave >= 4) {
+        if (r < 0.25) type = 'shooter';
+        else if (r < 0.5) type = 'dasher';
+    } else if (wave >= 2) {
+        if (r < 0.3) type = 'dasher';
+    }
+    
+    const sizes = [12, 12, 24, 24, 36];
+    let radius = sizes[Math.floor(Math.random() * sizes.length)];
+    if (type === 'tank') radius = 36;
+    else if (type === 'shooter') radius = 24;
+    else if (type === 'dasher') radius = 18;
+
+    const e = new Enemy(x, y, spd, type, radius);
     e.netId = ++enemyNetIdCounter;
     enemies.push(e);
 }
@@ -718,6 +740,34 @@ function checkCollisions() {
             }
         }
     }
+
+    // --- Enemy Bullets vs Player ---
+    for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const eb = enemyBullets[i];
+        const dist = Math.hypot(player.x - eb.x, player.y - eb.y);
+        if (dist < player.radius + eb.radius) {
+            const dmgMult = player.stealthLevel > 0.8 ? 0 : (1 - player.stealthLevel * 0.6);
+            if (dmgMult > 0) {
+                hitPlayer(eb.damage * dmgMult);
+            }
+            eb.hit = true;
+        }
+    }
+
+    // --- Enemy Bullets vs Player Bullets ---
+    for (let b = player.bullets.length - 1; b >= 0; b--) {
+        const bullet = player.bullets[b];
+        for (let ebi = enemyBullets.length - 1; ebi >= 0; ebi--) {
+            const eb = enemyBullets[ebi];
+            if (Math.hypot(eb.x - bullet.x, eb.y - bullet.y) < eb.radius + bullet.radius) {
+                eb.hit = true;
+                if (!bullet.isExplosive) bullet.hit = true;
+                if (particles.particles.length < MAX_PARTICLES)
+                    particles.emit(eb.x, eb.y, '#ff003c', 10, 3);
+                break;
+            }
+        }
+    }
 }
 
 // Co-op CLIENT collision against synced remote enemy positions
@@ -912,6 +962,14 @@ function update() {
         }
     }
 
+    for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const eb = enemyBullets[i];
+        eb.update();
+        if (eb.life <= 0 || eb.hit) {
+            enemyBullets.splice(i, 1);
+        }
+    }
+
     collectibles.forEach(g => g.update());
     powerups.forEach(p => p.update());
 
@@ -956,6 +1014,8 @@ function draw() {
     } else {
         enemies.forEach(e => e.draw(ctx));
     }
+    
+    enemyBullets.forEach(eb => eb.draw(ctx));
 
     // Draw this player
     player.draw(ctx);

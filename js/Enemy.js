@@ -40,6 +40,30 @@ function drawDamageNumbers(ctx) {
 }
 
 // ==============================
+// ENEMY BULLET CLASS
+// ==============================
+class EnemyBullet {
+    constructor(x, y, vx, vy, damage, radius = 6) {
+        this.x = x; this.y = y; this.vx = vx; this.vy = vy; 
+        this.damage = damage; this.radius = radius; 
+        this.life = 150; this.hit = false;
+    }
+    update() { 
+        this.x += this.vx; this.y += this.vy; 
+        this.life--; 
+    }
+    draw(ctx) {
+        const alpha = Math.min(1, this.life / 20);
+        ctx.save(); ctx.globalAlpha = alpha;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
+        ctx.fillStyle = '#fff'; ctx.shadowBlur = 12; ctx.shadowColor = '#ff003c'; ctx.fill();
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 1.5, 0, Math.PI * 2); 
+        ctx.fillStyle = '#ff003c'; ctx.globalAlpha = alpha * 0.4; ctx.fill();
+        ctx.restore();
+    }
+}
+
+// ==============================
 // ENEMY CLASS
 // ==============================
 class Enemy {
@@ -66,17 +90,38 @@ class Enemy {
         this.damage   = Math.floor(8 * (this.radius / 12));
         this.knockback = 4 * (this.radius / 12);
 
-        // Visuals
+        // Visuals & States
         this.angle     = 0;
         this.rotSpeed  = (Math.random() - 0.5) * 0.06;
         this.pulse     = Math.random() * Math.PI * 2;
         this.hitFlash  = 0;
         this.dead      = false;
 
-        // Color by size
-        if (this.radius === 36)      this.color = '#ff003c';
-        else if (this.radius === 24) this.color = '#ff7700';
-        else                          this.color = '#ffee00';
+        // Type specific stats
+        this.dashCooldown = 0;
+        this.shootCooldown = Math.random() * 60 + 60;
+        this.isDashing = false;
+
+        if (this.type === 'tank') {
+            this.maxHp *= 4;
+            this.hp = this.maxHp;
+            this.speed *= 0.4;
+            this.damage *= 2;
+            this.color = '#555555';
+            this.radius *= 1.2;
+        } else if (this.type === 'shooter') {
+            this.maxHp *= 0.8;
+            this.hp = this.maxHp;
+            this.color = '#a020f0'; // Purple
+        } else if (this.type === 'dasher') {
+            this.speed *= 1.2;
+            this.color = '#39ff14'; // Neon Green
+        } else {
+            // Seeker colors by size
+            if (this.radius === 36)      this.color = '#ff003c';
+            else if (this.radius === 24) this.color = '#ff7700';
+            else                          this.color = '#ffee00';
+        }
     }
 
     takeDamage(amount, x, y) {
@@ -98,8 +143,49 @@ class Enemy {
             const dx   = player.x - this.x;
             const dy   = player.y - this.y;
             const dist = Math.hypot(dx, dy) || 1;
-            this.vx += ((dx / dist) * this.speed - this.vx) * 0.08;
-            this.vy += ((dy / dist) * this.speed - this.vy) * 0.08;
+            
+            if (this.type === 'shooter') {
+                // Keep distance
+                let targetDist = 300;
+                let speedMult = dist < targetDist ? -0.5 : 1;
+                this.vx += ((dx / dist) * this.speed * speedMult - this.vx) * 0.08;
+                this.vy += ((dy / dist) * this.speed * speedMult - this.vy) * 0.08;
+                
+                // Shoot
+                this.shootCooldown--;
+                if (this.shootCooldown <= 0) {
+                    this.shootCooldown = 90 + Math.random() * 30;
+                    if (typeof enemyBullets !== 'undefined') {
+                        const aimAngle = Math.atan2(dy, dx);
+                        enemyBullets.push(new EnemyBullet(this.x, this.y, Math.cos(aimAngle) * 5, Math.sin(aimAngle) * 5, 20));
+                    }
+                }
+            } else if (this.type === 'dasher') {
+                if (this.isDashing) {
+                    this.dashCooldown--;
+                    if (this.dashCooldown <= 0) {
+                        this.isDashing = false;
+                        this.dashCooldown = 100 + Math.random() * 60; // Cooldown for next dash
+                    }
+                } else {
+                    // Normal movement
+                    this.vx += ((dx / dist) * this.speed - this.vx) * 0.08;
+                    this.vy += ((dy / dist) * this.speed - this.vy) * 0.08;
+                    
+                    this.dashCooldown--;
+                    if (this.dashCooldown <= 0 && dist < 400) {
+                        // Start dashing
+                        this.isDashing = true;
+                        this.dashCooldown = 20; // Dash duration
+                        this.vx = (dx / dist) * this.speed * 4; // Dash speed
+                        this.vy = (dy / dist) * this.speed * 4;
+                    }
+                }
+            } else {
+                // Default seeker / tank
+                this.vx += ((dx / dist) * this.speed - this.vx) * 0.08;
+                this.vy += ((dy / dist) * this.speed - this.vy) * 0.08;
+            }
         } else {
             if (Math.random() < 0.03) {
                 const a = Math.random() * Math.PI * 2;
@@ -107,7 +193,7 @@ class Enemy {
                 this.vy += Math.sin(a) * 0.5;
             }
             const spd = Math.hypot(this.vx, this.vy);
-            if (spd > this.speed * 0.5) {
+            if (spd > this.speed * 0.5 && !this.isDashing) {
                 this.vx = (this.vx / spd) * this.speed * 0.5;
                 this.vy = (this.vy / spd) * this.speed * 0.5;
             }
@@ -133,33 +219,63 @@ class Enemy {
         ctx.rotate(this.angle);
 
         // Body
-        ctx.beginPath();
-        for (let i = 0; i < spikes * 2; i++) {
-            const a   = (i / (spikes * 2)) * Math.PI * 2;
-            const rad = i % 2 === 0 ? r : r * 0.5;
-            const px  = Math.cos(a) * rad;
-            const py  = Math.sin(a) * rad;
-            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        if (this.type === 'tank') {
+            ctx.beginPath();
+            ctx.rect(-r, -r, r*2, r*2);
+            const grad = ctx.createLinearGradient(-r, -r, r, r);
+            grad.addColorStop(0, '#777'); grad.addColorStop(1, '#222');
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Inner core
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff0000'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff0000'; ctx.fill();
+        } else if (this.type === 'shooter') {
+            ctx.beginPath();
+            ctx.moveTo(r, 0); ctx.lineTo(-r*0.5, r*0.8); ctx.lineTo(-r*0.5, -r*0.8);
+            ctx.closePath();
+            ctx.fillStyle = col;
+            ctx.shadowBlur = glow; ctx.shadowColor = col;
+            ctx.fill();
+            
+            // Cannon barrel
+            ctx.fillStyle = '#555';
+            ctx.fillRect(0, -3, r*1.5, 6);
+            
+            // Eye
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 5; ctx.shadowColor = '#fff'; ctx.fill();
+        } else {
+            // Seeker / Dasher default star shape
+            ctx.beginPath();
+            for (let i = 0; i < spikes * 2; i++) {
+                const a   = (i / (spikes * 2)) * Math.PI * 2;
+                const rad = i % 2 === 0 ? r : r * 0.5;
+                const px  = Math.cos(a) * rad;
+                const py  = Math.sin(a) * rad;
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            
+            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+            grad.addColorStop(0, '#fff'); grad.addColorStop(1, col);
+            ctx.fillStyle = grad;
+            ctx.shadowBlur = this.isDashing ? 30 : glow;
+            ctx.shadowColor = col;
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Eye
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+            ctx.fillStyle = '#000'; ctx.shadowBlur = 0; ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, r * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = col; ctx.shadowBlur = 6; ctx.shadowColor = col; ctx.fill();
         }
-        ctx.closePath();
-
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-        if      (r === 36) { grad.addColorStop(0, '#ff6688'); grad.addColorStop(1, '#880022'); }
-        else if (r === 24) { grad.addColorStop(0, '#ffaa44'); grad.addColorStop(1, '#883300'); }
-        else               { grad.addColorStop(0, '#ffff66'); grad.addColorStop(1, '#886600'); }
-        ctx.fillStyle = grad;
-        ctx.shadowBlur = glow;
-        ctx.shadowColor = col;
-        ctx.fill();
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Eye
-        ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
-        ctx.fillStyle = '#000'; ctx.shadowBlur = 0; ctx.fill();
-        ctx.beginPath(); ctx.arc(0, 0, r * 0.15, 0, Math.PI * 2);
-        ctx.fillStyle = col; ctx.shadowBlur = 6; ctx.shadowColor = col; ctx.fill();
 
         ctx.restore();
 
