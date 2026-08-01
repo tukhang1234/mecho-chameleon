@@ -133,6 +133,14 @@ class AudioSystem {
         this.musicGeneration = 0; // Incremented on every music change to orphan old intervals
         this.beatInterval = null;
         this.beatStep = 0;
+
+        // Custom sounds
+        this.customSounds = {
+            laser: new Audio('sound/Laser sound.wav'),
+            lightning: new Audio('sound/lightning.wav')
+        };
+        this.customSounds.laser.volume = 0.5;
+        this.customSounds.lightning.volume = 0.5;
     }
 
     resume() {
@@ -142,6 +150,20 @@ class AudioSystem {
     // --- Sound Effects ---
     playSound(type) {
         this.resume();
+        
+        if (type === 'laser') {
+            const sound = this.customSounds.laser.cloneNode();
+            sound.volume = this.masterGain.gain.value;
+            sound.play().catch(e => {});
+            return;
+        }
+        if (type === 'lightning') {
+            const sound = this.customSounds.lightning.cloneNode();
+            sound.volume = this.masterGain.gain.value;
+            sound.play().catch(e => {});
+            return;
+        }
+
         const gain = this.audioCtx.createGain();
         gain.connect(this.masterGain);
         const now = this.audioCtx.currentTime;
@@ -154,7 +176,23 @@ class AudioSystem {
             osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
             gain.gain.setValueAtTime(0.12, now);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
             osc.start(now); osc.stop(now + 0.12);
+        } else if (type === 'fire') {
+            const bufferSize = this.audioCtx.sampleRate * 0.5;
+            const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const source = this.audioCtx.createBufferSource();
+            source.buffer = buffer;
+            const filter = this.audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 300;
+            source.connect(filter); filter.connect(gain);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.4, now + 0.1);
+            gain.gain.linearRampToValueAtTime(0, now + 0.5);
+            source.start(now); source.stop(now + 0.5);
         } else if (type === 'hit') {
             // Noise burst for impact
             const bufferSize = this.audioCtx.sampleRate * 0.15;

@@ -213,6 +213,13 @@ class Player {
         if (mouse.rightDown && this.energy > 2) {
             this.titanBreathActive = true;
             this.energy -= 1.5;
+            
+            if (!this.titanFireSoundCd || this.titanFireSoundCd <= 0) {
+                if (typeof audio !== 'undefined') audio.playSound('fire');
+                this.titanFireSoundCd = 25; // Cooldown to match sound duration
+            } else {
+                this.titanFireSoundCd--;
+            }
 
             if (typeof enemies !== 'undefined') {
                 for (const e of enemies) {
@@ -265,6 +272,7 @@ class Player {
             this.bullets.push(new ExplosiveBullet(barrelX, barrelY, Math.cos(aimAngle) * 24, Math.sin(aimAngle) * 24, '#00f3ff', 100, 16));
             this.railgunRecoil = 35;
             if (typeof screenShake !== 'undefined') screenShake.trigger(5, 5);
+            if (typeof audio !== 'undefined') audio.playSound('laser');
             this.titanGunCd = 12;
         }
 
@@ -300,6 +308,7 @@ class Player {
                 }
             }
             if (typeof screenShake !== 'undefined') screenShake.trigger(15, 15);
+            if (typeof audio !== 'undefined') audio.playSound('lightning');
             this.titanHammerCd = 45;
         }
 
