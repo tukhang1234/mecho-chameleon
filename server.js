@@ -33,8 +33,7 @@ app.get('/', (req, res) => {
 });
 
 // ─── Matchmaking ────────────────────────────────────────────────────────────
-// Simple single-slot queue per mode: first player waits, second joins them.
-const waitingQueue = {}; // { mode: socketId }
+const rooms = {}; // { roomId: { mode, host, players: [{id, team}] } }
 const roomRestarts = {}; // { roomId: Set<socketId> }
 
 // ─── Socket.IO Events ───────────────────────────────────────────────────────
@@ -42,60 +41,78 @@ io.on('connection', (socket) => {
     socket.data.roomId      = null;
     socket.data.playerIndex = null;
     socket.data.mode        = null;
+    socket.data.team        = null;
 
     console.log(`🟢 Connected: ${socket.id}`);
 
     // ── Find / create match ────────────────────────────────────────
-    socket.on('find_match', ({ mode }) => {
-        if (waitingQueue[mode]) {
-            const hostId     = waitingQueue[mode];
-            delete waitingQueue[mode];
+    socket.on('find_match', ({ mode, maxPlayers }) => {
+        let joinedRoomId = null;
+        let assignedTeam = null;
+        let playerIndex = null;
+        const requestedMax = maxPlayers || 2; // default to 2 if not provided
 
-            const hostSocket = io.sockets.sockets.get(hostId);
-
-            if (!hostSocket || !hostSocket.connected) {
-                // Host disconnected while waiting, re-queue this player
-                waitingQueue[mode] = socket.id;
-                socket.emit('waiting');
-                return;
+        // Find available room
+        for (const roomId in rooms) {
+            const room = rooms[roomId];
+            // Only join rooms with the same mode and same maxPlayers configuration
+            if (room.mode === mode && room.maxPlayers === requestedMax && room.players.length < room.maxPlayers) {
+                if (mode === 'pvp') {
+                    let team1Count = room.players.filter(p => p.team === 1).length;
+                    let team2Count = room.players.filter(p => p.team === 2).length;
+                    assignedTeam = team1Count <= team2Count ? 1 : 2;
+                } else {
+                    assignedTeam = 1;
+                }
+                room.players.push({ id: socket.id, team: assignedTeam });
+                joinedRoomId = roomId;
+                playerIndex = room.players.length;
+                break;
             }
-
-            const roomId = `room_${Date.now()}`;
-
-            // Join both into the room
-            hostSocket.join(roomId);
-            socket.join(roomId);
-
-            // Store metadata
-            hostSocket.data.roomId      = roomId;
-            hostSocket.data.playerIndex = 1;
-            hostSocket.data.mode        = mode;
-            socket.data.roomId          = roomId;
-            socket.data.playerIndex     = 2;
-            socket.data.mode            = mode;
-
-            // Notify both with their assigned index
-            hostSocket.emit('match_found', { roomId, mode, playerIndex: 1 });
-            socket.emit('match_found',     { roomId, mode, playerIndex: 2 });
-
-            console.log(`🎮 Match [${mode.toUpperCase()}] — Room: ${roomId}`);
-        } else {
-            // No one waiting — add to queue
-            waitingQueue[mode] = socket.id;
-            socket.emit('waiting');
-            console.log(`⏳ Waiting [${mode}]: ${socket.id}`);
         }
+
+        // Create new room if none found
+        if (!joinedRoomId) {
+            joinedRoomId = `room_${Date.now()}`;
+            assignedTeam = 1;
+            rooms[joinedRoomId] = { 
+                mode, 
+                maxPlayers: requestedMax, 
+                host: socket.id, 
+                players: [{ id: socket.id, team: assignedTeam }] 
+            };
+            playerIndex = 1;
+        }
+
+        socket.join(joinedRoomId);
+        socket.data.roomId      = joinedRoomId;
+        socket.data.playerIndex = playerIndex;
+        socket.data.mode        = mode;
+        socket.data.team        = assignedTeam;
+
+        // Send match found to player
+        socket.emit('match_found', { 
+            roomId: joinedRoomId, 
+            mode, 
+            playerIndex, 
+            team: assignedTeam,
+            isHost: rooms[joinedRoomId].host === socket.id
+        });
+
+        // Broadcast to others that a player joined
+        socket.to(joinedRoomId).emit('player_joined', { 
+            id: socket.id, 
+            team: assignedTeam, 
+            playerIndex 
+        });
+
+        console.log(`🎮 Match [${mode.toUpperCase()}] — Room: ${joinedRoomId}, Player: ${socket.id}, Team: ${assignedTeam}`);
     });
 
     // ── Cancel matchmaking ─────────────────────────────────────────
     socket.on('cancel_search', () => {
-        for (const m in waitingQueue) {
-            if (waitingQueue[m] === socket.id) {
-                delete waitingQueue[m];
-                console.log(`❌ Cancelled search [${m}]: ${socket.id}`);
-                break;
-            }
-        }
+        // Since we join instantly now, cancel_search is mostly if they leave before match loads,
+        // but disconnect handles that.
     });
 
     // ── Relay: player position / visual state ──────────────────────
@@ -124,8 +141,17 @@ io.on('connection', (socket) => {
 
     // ── Relay: player died notification ───────────────────────────
     socket.on('player_died', () => {
+        const { roomId, team } = socket.data;
+        if (roomId) socket.to(roomId).emit('opponent_died', { id: socket.id, team });
+    });
+    
+    // ── Relay: kill confirmed (give coins) ────────────────────────
+    socket.on('kill_confirmed', (killerId) => {
         const { roomId } = socket.data;
-        if (roomId) socket.to(roomId).emit('opponent_died');
+        if (roomId) {
+            // Send to the killer so they get coins
+            io.to(killerId).emit('reward_coins', 50);
+        }
     });
 
     // ── Relay: restart request ─────────────────────────────────────
@@ -151,23 +177,27 @@ io.on('connection', (socket) => {
 
     // ── Disconnect ────────────────────────────────────────────────
     socket.on('disconnect', () => {
-        // Remove from waiting queue if present
-        for (const m in waitingQueue) {
-            if (waitingQueue[m] === socket.id) {
-                delete waitingQueue[m];
-                break;
-            }
-        }
-        // Notify room partner
         const { roomId } = socket.data;
-        if (roomId) {
-            socket.to(roomId).emit('opponent_disconnected');
-            if (roomRestarts[roomId]) {
-                roomRestarts[roomId].delete(socket.id);
-                if (roomRestarts[roomId].size === 0) delete roomRestarts[roomId];
+        if (roomId && rooms[roomId]) {
+            const room = rooms[roomId];
+            room.players = room.players.filter(p => p.id !== socket.id);
+            
+            if (room.players.length === 0) {
+                delete rooms[roomId];
+                if (roomRestarts[roomId]) delete roomRestarts[roomId];
+            } else {
+                if (room.host === socket.id) {
+                    room.host = room.players[0].id; // Reassign host
+                    io.to(room.host).emit('host_migrated');
+                }
+                socket.to(roomId).emit('opponent_disconnected', { id: socket.id });
+                
+                if (roomRestarts[roomId]) {
+                    roomRestarts[roomId].delete(socket.id);
+                    if (roomRestarts[roomId].size === 0) delete roomRestarts[roomId];
+                }
             }
         }
-
         console.log(`🔴 Disconnected: ${socket.id}`);
     });
 });

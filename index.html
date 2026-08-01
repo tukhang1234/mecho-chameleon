@@ -167,9 +167,11 @@
                         <span class="label">WAVE</span>
                         <span id="waveDisplay">1</span>
                     </div>
-                    <div class="gears-container">
-                        <span class="label">GEAR</span>
-                        <span id="gearsDisplay">0</span>
+                    <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+                        <div class="gears-container" style="border-color: gold;">
+                            <span class="label" style="color: gold;">🪙 XU</span>
+                            <span id="sessionCoinsDisplay" style="color: gold;">0</span>
+                        </div>
                     </div>
                 </div>
 
@@ -204,9 +206,17 @@
                 <h1 class="neon-text title">MULTI<br>PLAYER</h1>
                 <p class="subtitle">Chọn chế độ chơi</p>
                 <div style="margin-bottom: 20px;">
-                    <label style="color: #00f3ff; font-family: 'Orbitron', monospace; margin-right: 10px;">SỐ NGƯỜI CHƠI (MIN & MAX 2):</label>
+                    <label style="color: #00f3ff; font-family: 'Orbitron', monospace; margin-right: 10px;">SỐ NGƯỜI CHƠI (MIN 2, MAX 10):</label>
                     <select id="player-count-select" style="background: rgba(0,0,0,0.8); color: #fff; border: 1px solid #00f3ff; padding: 5px; font-family: 'Orbitron', monospace; border-radius: 5px; outline: none; cursor: pointer;">
                         <option value="2" selected>2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4">4 Players</option>
+                        <option value="5">5 Players</option>
+                        <option value="6">6 Players</option>
+                        <option value="7">7 Players</option>
+                        <option value="8">8 Players</option>
+                        <option value="9">9 Players</option>
+                        <option value="10">10 Players</option>
                     </select>
                 </div>
                 <div class="mode-buttons">
@@ -241,9 +251,9 @@
             <!-- ====== VICTORY (PvP) ====== -->
             <div id="victory-screen" class="screen hidden">
                 <h1 class="neon-text victory-text">🏆 CHIẾN THẮNG!</h1>
-                <div class="stats">
+                <div class="stats-panel">
                     <p>Score: <span id="victoryScore">0</span></p>
-                    <p>Gears: <span id="victoryGears">0</span></p>
+                    <p style="color: gold;">🪙 Xu nhận: <span id="victoryCoins">0</span></p>
                 </div>
                 <button id="victory-restart-btn" class="neon-button">↺ Chơi lại</button>
                 <button id="menu-from-victory-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
@@ -254,8 +264,8 @@
                 <h1 class="neon-text red-neon">SYSTEM FAILURE</h1>
                 <div class="stats">
                     <p>Score: <span id="finalScore">0</span></p>
-                    <p>Gears: <span id="finalGears">0</span></p>
                     <p>Wave Reached: <span id="finalWave">0</span></p>
+                    <p style="color: gold;">🪙 Xu nhận: <span id="finalCoins">0</span></p>
                 </div>
                 <button id="restart-btn" class="neon-button">↺ RESTART</button>
                 <button id="menu-from-gameover-btn" class="back-btn" style="margin-top: 15px;">← Quay lại Menu</button>
@@ -541,6 +551,7 @@
             transition: all 0.2s;
         ">📊 STATS [C]</button>
             <button id="ingame-settings-btn" class="hidden" style="
+            position: absolute; left: 20px; top: 120px;
             z-index: 51;
             padding: 7px 14px;
             font-size: 0.85rem;
