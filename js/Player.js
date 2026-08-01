@@ -163,14 +163,20 @@ class Player {
             this.vy += dy * 0.9;
             this.vx *= 0.88;
             this.vy *= 0.88;
-            this.x = Math.max(this.radius, Math.min(window.WORLD_WIDTH - this.radius, this.x + this.vx));
-            this.y = Math.max(this.radius, Math.min(window.WORLD_HEIGHT - this.radius, this.y + this.vy));
+            this.x += this.vx;
+            this.y += this.vy;
             this.isMoving = (Math.abs(this.vx) > 0.5 || Math.abs(this.vy) > 0.5);
         } else {
-            this.x = Math.max(this.radius, Math.min(window.WORLD_WIDTH - this.radius, this.x + dx * this.speed));
-            this.y = Math.max(this.radius, Math.min(window.WORLD_HEIGHT - this.radius, this.y + dy * this.speed));
+            this.x += dx * this.speed;
+            this.y += dy * this.speed;
             this.isMoving = (dx !== 0 || dy !== 0);
         }
+
+        // Wrap around world edges
+        if (this.x < -100) this.x = window.WORLD_WIDTH + 100;
+        if (this.x > window.WORLD_WIDTH + 100) this.x = -100;
+        if (this.y < -100) this.y = window.WORLD_HEIGHT + 100;
+        if (this.y > window.WORLD_HEIGHT + 100) this.y = -100;
 
         // Toàn thân luôn nhìn theo chuột
         this.angle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
@@ -208,6 +214,7 @@ class Player {
 
     updateTitanLogic(keys, mouse) {
         this.energy = Math.min(this.maxEnergy, this.energy + 0.05);
+        const targetList = (typeof enemies !== 'undefined' ? enemies : []).concat(typeof remoteEnemies !== 'undefined' ? remoteEnemies : []);
 
         // LÕI PHUN LỬA (Nhấn giữ Chuột Phải)
         if (mouse.rightDown && this.energy > 2) {
@@ -221,8 +228,8 @@ class Player {
                 this.titanFireSoundCd--;
             }
 
-            if (typeof enemies !== 'undefined') {
-                for (const e of enemies) {
+            if (targetList.length > 0) {
+                for (const e of targetList) {
                     if (e.dead) continue;
                     const dist = Math.hypot(e.x - this.x, e.y - this.y);
                     if (dist < 800) {
@@ -232,8 +239,10 @@ class Player {
                         while (eDiff > Math.PI) eDiff -= Math.PI * 2;
 
                         if (Math.abs(eDiff) < 0.85) {
-                            if (e.takeDamage && e.takeDamage(35, e.x, e.y).dead) {
-                                let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
+                            if (e.takeDamage) {
+                                if (e.takeDamage(5, e.x, e.y).dead) { let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx); }
+                            } else if (e.netId !== undefined && typeof socket !== 'undefined') {
+                                socket.emit('client_hit', { netId: e.netId, damage: 5 });
                             }
                         }
                     }
@@ -291,8 +300,8 @@ class Player {
             // Phát sóng xung kích lan ra đúng từ vị trí đầu búa đập xuống
             this.shockwaves.push({ x: hx, y: hy, radius: 0, life: 1.0 });
 
-            if (typeof enemies !== 'undefined') {
-                for (const e of enemies) {
+            if (targetList.length > 0) {
+                for (const e of targetList) {
                     if (!e.dead && Math.hypot(e.x - hx, e.y - hy) < 200) {
                         const dx = e.x - hx;
                         const dy = e.y - hy;
@@ -301,8 +310,10 @@ class Player {
                         e.x += (dx / distToCenter) * 90; // Hất văng
                         e.y += (dy / distToCenter) * 90;
 
-                        if (e.takeDamage && e.takeDamage(200, e.x, e.y).dead) {
-                            let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
+                        if (e.takeDamage) {
+                            if (e.takeDamage(200, e.x, e.y).dead) { let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx); }
+                        } else if (e.netId !== undefined && typeof socket !== 'undefined') {
+                            socket.emit('client_hit', { netId: e.netId, damage: 200 });
                         }
                     }
                 }
@@ -322,6 +333,8 @@ class Player {
     }
 
     updateChameleonLogic(keys, mouse) {
+        const targetList = (typeof enemies !== 'undefined' ? enemies : []).concat(typeof remoteEnemies !== 'undefined' ? remoteEnemies : []);
+
         if (keys[' '] && this.stealthCooldown <= 0) {
             this.emergencyStealthActive = true;
             this.stealthCooldown = this.maxStealthCooldown;
@@ -379,8 +392,8 @@ class Player {
                 let rangeLeft = hasM6 ? 600 : (hasM5 ? 450 : (hasM1 ? 240 : (hasM2 ? 180 : 350)));
                 let rangeRight = rangeLeft;
 
-                if (typeof enemies !== 'undefined' && enemies.length > 0) {
-                    for (const e of enemies) {
+                if (targetList.length > 0) {
+                    for (const e of targetList) {
                         if (e.dead) continue;
                         const dist = Math.hypot(e.x - this.x, e.y - this.y);
                         if (e.x < this.x) { if (dist < rangeLeft) { rangeLeft = dist; targetLeft = e; } }
@@ -395,10 +408,14 @@ class Player {
                     let anyTarget = targetLeft || targetRight;
 
                     if (hasM6) {
-                        if (typeof enemies !== 'undefined' && Math.random() < 0.15) {
-                            for (const e of enemies) {
+                        if (targetList.length > 0 && Math.random() < 0.15) {
+                            for (const e of targetList) {
                                 if (!e.dead && Math.hypot(e.x - this.x, e.y - this.y) < 350) {
-                                    if (e.takeDamage && e.takeDamage(60, e.x, e.y).dead) { let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx); }
+                                    if (e.takeDamage) {
+                                        if (e.takeDamage(60, e.x, e.y).dead) { let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx); }
+                                    } else if (e.netId !== undefined && typeof socket !== 'undefined') {
+                                        socket.emit('client_hit', { netId: e.netId, damage: 60 });
+                                    }
                                     this.lasers.push(new Laser(this.x, this.y, Math.atan2(e.y - this.y, e.x - this.x), '#00f3ff', 0, 0.5));
                                 }
                             }
@@ -423,10 +440,14 @@ class Player {
                     }
                     else if (hasM5) {
                         let slashed = false;
-                        if (typeof enemies !== 'undefined') {
-                            for (const e of enemies) {
+                        if (targetList.length > 0) {
+                            for (const e of targetList) {
                                 if (!e.dead && Math.hypot(e.x - this.x, e.y - this.y) < 220) {
-                                    if (e.takeDamage && e.takeDamage(100, e.x, e.y).dead) { let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx); }
+                                    if (e.takeDamage) {
+                                        if (e.takeDamage(100, e.x, e.y).dead) { let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx); }
+                                    } else if (e.netId !== undefined && typeof socket !== 'undefined') {
+                                        socket.emit('client_hit', { netId: e.netId, damage: 100 });
+                                    }
                                     slashed = true;
                                 }
                             }
@@ -450,11 +471,19 @@ class Player {
                     }
                     else if (hasM1) {
                         if (targetLeft) {
-                            if (targetLeft.takeDamage && targetLeft.takeDamage(35, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
+                            if (targetLeft.takeDamage) {
+                                if (targetLeft.takeDamage(35, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
+                            } else if (targetLeft.netId !== undefined && typeof socket !== 'undefined') {
+                                socket.emit('client_hit', { netId: targetLeft.netId, damage: 35 });
+                            }
                             didPunch = true; this.armsPunchAnimL = 10;
                         }
                         if (targetRight) {
-                            if (targetRight.takeDamage && targetRight.takeDamage(35, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
+                            if (targetRight.takeDamage) {
+                                if (targetRight.takeDamage(35, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
+                            } else if (targetRight.netId !== undefined && typeof socket !== 'undefined') {
+                                socket.emit('client_hit', { netId: targetRight.netId, damage: 35 });
+                            }
                             didPunch = true; this.armsPunchAnimR = 10;
                         }
                         if (didPunch) { if (typeof audio !== 'undefined' && audio) audio.playSound('shoot'); this.armsCooldown = 40; }
@@ -462,11 +491,19 @@ class Player {
                     else if (hasM2 || hasM3 || hasM4) {
                         if (hasM2) {
                             if (targetLeft && Math.hypot(targetLeft.x - this.x, targetLeft.y - this.y) < 180) {
-                                if (targetLeft.takeDamage && targetLeft.takeDamage(40, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
+                                if (targetLeft.takeDamage) {
+                                    if (targetLeft.takeDamage(40, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
+                                } else if (targetLeft.netId !== undefined && typeof socket !== 'undefined') {
+                                    socket.emit('client_hit', { netId: targetLeft.netId, damage: 40 });
+                                }
                                 didPunch = true; this.armsPunchAnimL = 10;
                             }
                             if (targetRight && Math.hypot(targetRight.x - this.x, targetRight.y - this.y) < 180) {
-                                if (targetRight.takeDamage && targetRight.takeDamage(40, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
+                                if (targetRight.takeDamage) {
+                                    if (targetRight.takeDamage(40, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
+                                } else if (targetRight.netId !== undefined && typeof socket !== 'undefined') {
+                                    socket.emit('client_hit', { netId: targetRight.netId, damage: 40 });
+                                }
                                 didPunch = true; this.armsPunchAnimR = 10;
                             }
                             if (didPunch) { if (typeof audio !== 'undefined' && audio) audio.playSound('shoot'); this.armsCooldown = 35; }
@@ -801,7 +838,7 @@ class Player {
 
             ctx.rotate(this.angle);
             for (let i = 0; i < 4; i++) { drawSeraphWing(i, true); drawSeraphWing(i, false); }
-            ctx.restore(); return;
+            ctx.restore();
         }
 
         if (hasM5) {
@@ -838,7 +875,7 @@ class Player {
             };
 
             for (let i = 0; i < 3; i++) { drawPhantomArm(this.x, this.y, leftArmAngle, i, true); drawPhantomArm(this.x, this.y, rightArmAngle, i, false); }
-            ctx.restore(); return;
+            ctx.restore();
         }
 
         let slx = this.x + Math.cos(this.angle - Math.PI / 1.5) * (this.radius + 5);
@@ -882,7 +919,9 @@ class Player {
             });
         };
 
-        drawCyberArm(slx, sly, elx, ely, lx, ly, themeColor); drawCyberArm(srx, sry, erx, ery, rx, ry, themeColor);
+        if (!hasM5 && !hasM6) {
+            drawCyberArm(slx, sly, elx, ely, lx, ly, themeColor); drawCyberArm(srx, sry, erx, ery, rx, ry, themeColor);
+        }
 
         ctx.fillStyle = '#222'; ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.shadowBlur = 10; ctx.shadowColor = themeColor;
 

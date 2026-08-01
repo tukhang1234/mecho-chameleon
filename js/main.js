@@ -10,7 +10,6 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const playBtn = document.getElementById('play-btn');
 const restartBtn = document.getElementById('restart-btn');
 const scoreDisplay = document.getElementById('scoreDisplay');
-const gearsDisplay = document.getElementById('gearsDisplay');
 const healthBar = document.getElementById('healthBar');
 const stealthBar = document.getElementById('stealthCooldownBar');
 const waveDisplay = document.getElementById('waveDisplay');
@@ -85,16 +84,20 @@ const mouse = { x: 0, y: 0, down: false };
 let autoAimEnabled = true;
 
 // Game Data
-let score = 0, gears = 0, playerHealth = 100, maxPlayerHealth = 100;
+let score = 0, playerHealth = 100, maxPlayerHealth = 100;
 let waveNumber = 0;
 let waveActive = false;
 let waveTimer = 0;
 let enemiesLeft = 0;
 
 // Shop / Persistence
+let sessionCoins = 0;
 let coins = parseInt(localStorage.getItem('chameleon_coins')) || 0;
-coins += 100000; // Cheat: add 100k
-localStorage.setItem('chameleon_coins', coins.toString());
+function addCoins(amount) {
+    coins += amount;
+    sessionCoins += amount;
+    localStorage.setItem('chameleon_coins', coins.toString());
+}
 let shopInventory = JSON.parse(localStorage.getItem('chameleon_inventory')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, arms_m5: false, arms_m6: false, core: false, titan_blue: false };
 let equippedItems = JSON.parse(localStorage.getItem('chameleon_equipped')) || { armor: false, arms_m1: false, arms_m2: false, arms_m3: false, arms_m4: false, arms_m5: false, arms_m6: false, core: false, titan_blue: false };
 // Patch old saves that might be missing new fields
@@ -115,13 +118,57 @@ window.camera = { x: 2000, y: 2000 };
 window.planets = [];
 for (let i = 0; i < 5; i++) window.planets.push(new Planet());
 
+// Damage Numbers Array
+window.damageTexts = [];
+
+window.spawnDamageNumber = function(x, y, text, isCrit) {
+    window.damageTexts.push({
+        x: x,
+        y: y,
+        text: text,
+        isCrit: isCrit,
+        life: 40,
+        maxLife: 40,
+        vy: -1 - Math.random() * 1.5,
+        vx: (Math.random() - 0.5) * 1.5
+    });
+};
+
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    const errorMsg = `[CRASH] ${msg} at ${lineNo}:${columnNo}`;
+    console.error(errorMsg);
+    
+    // Create or update error overlay
+    let errDiv = document.getElementById('debug-error-overlay');
+    if (!errDiv) {
+        errDiv = document.createElement('div');
+        errDiv.id = 'debug-error-overlay';
+        errDiv.style.position = 'absolute';
+        errDiv.style.top = '10%';
+        errDiv.style.left = '50%';
+        errDiv.style.transform = 'translate(-50%, -10%)';
+        errDiv.style.color = 'red';
+        errDiv.style.background = 'rgba(0,0,0,0.8)';
+        errDiv.style.border = '2px solid red';
+        errDiv.style.padding = '20px';
+        errDiv.style.zIndex = '99999';
+        errDiv.style.fontFamily = 'monospace';
+        errDiv.style.fontSize = '18px';
+        errDiv.style.pointerEvents = 'none';
+        document.body.appendChild(errDiv);
+    }
+    errDiv.innerHTML += `<div>${errorMsg}</div>`;
+    return false;
+};
+
 // ==========================
 // MULTIPLAYER STATE
 // ==========================
 let socket = null;
-let mpMode = null;   // null | 'coop' | 'pvp'
-let playerIndex = 0;      // 1 = Host, 2 = Client
-let opponentState = null;   // Latest state received from opponent
+let mpMode = null;          // 'coop' or 'pvp'
+let playerIndex = 0;        // 1 = Host, 2-10 = Client
+let myTeam = 1;
+let remotePlayers = {};     // { [socketId]: state }
 let remoteEnemies = [];     // Enemy positions synced from host (coop client)
 let enemyNetIdCounter = 0;  // Unique IDs for enemies (for co-op hit relay)
 let syncFrame = 0;      // Frame counter for enemy sync throttle
@@ -146,13 +193,15 @@ resize();
 
 function buildStars() {
     bgStars = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 150; i++) {
         bgStars.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            r: Math.random() * 1.4 + 0.2,
+            x: Math.random() * 4000,
+            y: Math.random() * 4000,
+            r: Math.random() * 1.5 + 0.5,
             t: Math.random() * Math.PI * 2,
-            cyan: Math.random() < 0.25
+            twinkleSpeed: Math.random() * 0.04 + 0.01,
+            parallax: Math.random() * 0.4 + 0.05,
+            color: Math.random() > 0.8 ? '#00f3ff' : (Math.random() > 0.6 ? '#ff88ff' : '#ffffff')
         });
     }
 }
@@ -275,17 +324,34 @@ menuBg();
 // ==========================
 function initGame() {
     if (waveInterval) clearInterval(waveInterval);
-    player = new Player(window.WORLD_WIDTH / 2, window.WORLD_HEIGHT / 2);
+    
+    // Set spawn based on mode and team
+    let spawnX = canvas.width / 2;
+    let spawnY = canvas.height / 2;
+    
+    if (mpMode === 'pvp') {
+        spawnX = myTeam === 1 ? 500 : WORLD_WIDTH - 500;
+        spawnY = WORLD_HEIGHT / 2 + (Math.random() * 400 - 200);
+    } else {
+        spawnX = WORLD_WIDTH / 2 + (Math.random() * 200 - 100);
+        spawnY = WORLD_HEIGHT / 2 + (Math.random() * 200 - 100);
+    }
+    
+    player = new Player(spawnX, spawnY);
     window.camera.x = player.x;
     window.camera.y = player.y;
     player.equipped = equippedItems;
+    if (mpMode === 'pvp') {
+        player.hue = myTeam === 1 ? 180 : 0; // Cyan vs Red
+    }
     player.invulnTimer = 0;
     enemies = []; collectibles = []; powerups = [];
     particles = new ParticleSystem();
     screenShake = new ScreenShake();
     if (!audio) audio = new AudioSystem();
 
-    score = 0; gears = 0; maxPlayerHealth = 100;
+    score = 0; maxPlayerHealth = 100;
+    sessionCoins = 0;
     if (equippedItems.armor) maxPlayerHealth += 50;
     if (equippedItems.titan_blue) maxPlayerHealth += 200; // Titan: rất nhiều máu
     playerHealth = maxPlayerHealth;
@@ -352,9 +418,7 @@ function initGame() {
     }
 
     if (mpMode === 'pvp') {
-        oppHPContainer.classList.remove('hidden');
-        pvpOpponentHealth = 100;
-        updateOppHealthBar(100);
+        oppHPContainer.classList.add('hidden');
     } else {
         oppHPContainer.classList.add('hidden');
     }
@@ -393,7 +457,7 @@ function pvpPowerupTimer() {
 // ==========================
 function startNextWave() {
     // Co-op clients don't manage waves (host does)
-    if (mpMode === 'coop' && playerIndex === 2) return;
+    if (mpMode === 'coop' && playerIndex !== 1) return;
 
     waveNumber++;
     const isBossWave = waveNumber % 10 === 0;
@@ -528,7 +592,8 @@ function showUpgradeText(text) {
 // ==========================
 function updateHUD() {
     scoreDisplay.innerText = Math.floor(score);
-    gearsDisplay.innerText = gears;
+    const sessionCoinsDisplay = document.getElementById('sessionCoinsDisplay');
+    if (sessionCoinsDisplay) sessionCoinsDisplay.innerText = sessionCoins;
     if (waveDisplay) waveDisplay.innerText = waveNumber;
 
     healthBar.style.width = Math.max(0, (playerHealth / maxPlayerHealth) * 100) + '%';
@@ -609,7 +674,7 @@ function checkCollisions() {
         for (let i = collectibles.length - 1; i >= 0; i--) {
             const g = collectibles[i];
             if (Math.hypot(g.x - tip.x, g.y - tip.y) < g.radius + 14) {
-                score += g.value; gears++;
+                score += g.value;
                 if (particles.particles.length < MAX_PARTICLES)
                     particles.emit(g.x, g.y, g.color, 14, 4);
                 if (audio) audio.playSound('pickup');
@@ -624,7 +689,7 @@ function checkCollisions() {
     for (let i = collectibles.length - 1; i >= 0; i--) {
         const g = collectibles[i];
         if (Math.hypot(player.x - g.x, player.y - g.y) < player.radius + g.radius) {
-            score += g.value; gears++;
+            score += g.value;
             if (particles.particles.length < MAX_PARTICLES)
                 particles.emit(g.x, g.y, g.color, 10, 3);
             if (audio) audio.playSound('pickup');
@@ -667,7 +732,7 @@ function checkCollisions() {
             if (!player.tongueHitList.has(p) && Math.hypot(p.x - tip.x, p.y - tip.y) < p.radius + 15) {
                 player.tongueHitList.add(p);
                 if (p.takeDamage(player.finalDamage, tip.x, tip.y)) {
-                    coins += 2000;
+                    addCoins(2000);
                     if (typeof spawnDamageNumber !== 'undefined') spawnDamageNumber(p.x, p.y, "+2000 Xu", true);
                     if (audio) audio.playSound('split');
                     for (let i=0; i<3; i++) powerups.push(new PowerUp(p.x + (Math.random()-0.5)*200, p.y + (Math.random()-0.5)*200));
@@ -682,7 +747,7 @@ function checkCollisions() {
             const bullet = player.bullets[b];
             if (Math.hypot(p.x - bullet.x, p.y - bullet.y) < p.radius + bullet.radius) {
                 if (p.takeDamage(bullet.damage, bullet.x, bullet.y)) {
-                    coins += 2000;
+                    addCoins(2000);
                     if (typeof spawnDamageNumber !== 'undefined') spawnDamageNumber(p.x, p.y, "+2000 Xu", true);
                     if (audio) audio.playSound('split');
                     for (let i=0; i<3; i++) powerups.push(new PowerUp(p.x + (Math.random()-0.5)*200, p.y + (Math.random()-0.5)*200));
@@ -694,27 +759,31 @@ function checkCollisions() {
 
         // Player vs Planet (collide and block)
         const dist = Math.hypot(player.x - p.x, player.y - p.y);
-        if (dist < player.radius + player.radius) {
+        if (dist < player.radius + p.radius) {
             const overlap = player.radius + p.radius - dist;
+            const safeDist = dist || 1; // Prevent NaN
             const dx = player.x - p.x, dy = player.y - p.y;
-            player.x += (dx / dist) * overlap * 0.5;
-            player.y += (dy / dist) * overlap * 0.5;
+            player.x += (dx / safeDist) * overlap * 0.5;
+            player.y += (dy / safeDist) * overlap * 0.5;
             player.vx *= 0.5;
             player.vy *= 0.5;
         }
     }
 
-    // ⚔️⚔️⚔️ PvP: tongue/bullet/laser vs OPPONENT ⚔️⚔️⚔️
-    if (mpMode === 'pvp' && opponentState && socket) {
-        const oppR = 18;
+    // ⚔️⚔️⚔️ PvP Hit Detection
+    if (mpMode === 'pvp' && socket) {
+        for (const [id, opp] of Object.entries(remotePlayers)) {
+            if (opp.team === myTeam) continue; // Don't hurt teammates
+            
+            const oppR = opp.radius || 15;
 
-        // Tongue vs opponent
-        if (tip && player.tongueProgress > 0.1) {
-            if (!tongueHitOpp && Math.hypot(opponentState.x - tip.x, opponentState.y - tip.y) < oppR + 15) {
+            // Tongue vs opponent
+            if (tip && player.tongueProgress > 0.1) {
+                   if (!tongueHitOpp && Math.hypot(opp.x - tip.x, opp.y - tip.y) < oppR + 15) {
                 tongueHitOpp = true;
-                socket.emit('pvp_hit', { damage: player.finalDamage });
-                if (particles && particles.particles.length < MAX_PARTICLES)
-                    particles.burst(opponentState.x, opponentState.y, '#ff8800', 12, 0, -1);
+                socket.emit('pvp_hit', { targetId: id, damage: player.finalDamage });
+                // Visual hit effect
+                particles.burst(opp.x, opp.y, '#ff8800', 12, 0, -1);
                 if (audio) audio.playSound('hit');
                 screenShake.trigger(3, 6);
             }
@@ -724,8 +793,10 @@ function checkCollisions() {
         // Bullets vs opponent
         for (let b = player.bullets.length - 1; b >= 0; b--) {
             const bullet = player.bullets[b];
-            if (Math.hypot(opponentState.x - bullet.x, opponentState.y - bullet.y) < oppR + bullet.radius) {
-                socket.emit('pvp_hit', { damage: bullet.damage });
+            if (Math.hypot(opp.x - bullet.x, opp.y - bullet.y) < oppR + bullet.radius) {
+                bullet.active = false;
+                socket.emit('pvp_hit', { targetId: id, damage: bullet.damage });
+                particles.burst(opp.x, opp.y, '#ff8800', 8, 0, -1);
                 player.bullets.splice(b, 1);
                 screenShake.trigger(2, 4);
                 break;
@@ -735,19 +806,20 @@ function checkCollisions() {
         // Laser vs opponent
         for (const laser of player.lasers) {
             if (laser.life === laser.maxLife - 1) {
-                const ldx = opponentState.x - laser.x;
-                const ldy = opponentState.y - laser.y;
+                const ldx = opp.x - laser.x;
+                const ldy = opp.y - laser.y;
                 const proj = ldx * Math.cos(laser.angle) + ldy * Math.sin(laser.angle);
                 const perp = Math.abs(-ldx * Math.sin(laser.angle) + ldy * Math.cos(laser.angle));
                 if (proj > 0 && proj < laser.length && perp < oppR + 10) {
-                    socket.emit('pvp_hit', { damage: laser.damage });
+                    socket.emit('pvp_hit', { targetId: id, damage: laser.damage });
                 }
             }
+        }
         }
     }
 
     // 🤝🤝🤝 Co-op CLIENT: hit remote enemies 🤝🤝🤝
-    if (mpMode === 'coop' && playerIndex === 2 && socket) {
+    if (mpMode === 'coop' && playerIndex !== 1 && socket) {
         checkCoopClientCollisions(tip);
         return; // skip normal enemy collisions (client has no local enemies)
     }
@@ -822,6 +894,8 @@ function checkCollisions() {
                 const d = Math.hypot(dx, dy) || 1;
                 player.x += (dx / d) * e.knockback;
                 player.y += (dy / d) * e.knockback;
+                player.vx *= 0.5;
+                player.vy *= 0.5;
             }
             if (!e.isBoss) {
                 e.dead = true;
@@ -944,8 +1018,7 @@ function onEnemyDeath(e, idx) {
 
     // --- Hệ thống rơi xu (Economy) ---
     let coinDrop = e.isBoss ? (1000 + waveNumber * 200) : Math.floor(e.maxHp / 5) || 5;
-    coins += coinDrop;
-    localStorage.setItem('chameleon_coins', coins.toString());
+    addCoins(coinDrop);
     if (typeof spawnDamageNumber !== 'undefined') {
         spawnDamageNumber(e.x, e.y - 20, "+" + coinDrop + " Xu", true);
     }
@@ -987,9 +1060,6 @@ function onEnemyDeath(e, idx) {
 }
 
 function handleGearUpgrade() {
-    if (gears % 5 === 0) { player.tongueRange += 20; showUpgradeText('TONGUE RANGE +20!'); }
-    else if (gears % 12 === 0) { player.maxStealthCooldown = Math.max(80, player.maxStealthCooldown - 25); showUpgradeText('STEALTH CD REDUCED!'); }
-    else if (gears % 8 === 0) { player.speed = Math.min(7.5, player.speed + 0.25); showUpgradeText('SPEED +0.25!'); }
 }
 
 // ==========================
@@ -1018,12 +1088,20 @@ function drawBg(t) {
 
     ctx.shadowBlur = 0;
     for (const s of bgStars) {
-        s.t += 0.015;
-        const a = 0.35 + Math.sin(s.t) * 0.25;
+        s.t += s.twinkleSpeed || 0.015;
+        const a = 0.3 + Math.sin(s.t) * 0.5;
+        if (a <= 0) continue;
         ctx.globalAlpha = a;
-        ctx.fillStyle = s.cyan ? '#00f3ff' : '#ffffff';
+        ctx.fillStyle = s.color || '#ffffff';
+        
+        const px = (s.x - cx * (s.parallax || 0.1)) % W;
+        const py = (s.y - cy * (s.parallax || 0.1)) % H;
+        
+        const drawX = px < 0 ? px + W : px;
+        const drawY = py < 0 ? py + H : py;
+
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.arc(drawX, drawY, s.r, 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -1045,7 +1123,7 @@ function update() {
     bgT += 0.008;
 
     // Wave timing (host or single-player only)
-    if (!waveActive && mpMode !== 'pvp' && !(mpMode === 'coop' && playerIndex === 2)) {
+    if (!waveActive && mpMode !== 'pvp' && !(mpMode === 'coop' && playerIndex !== 1)) {
         waveTimer--;
         if (waveTimer <= 0) startNextWave();
     }
@@ -1071,7 +1149,7 @@ function update() {
     }
 
     // Update enemies (skip for coop client, they use remoteEnemies)
-    if (!(mpMode === 'coop' && playerIndex === 2)) {
+    if (!(mpMode === 'coop' && playerIndex !== 1)) {
         for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
             if (e.dead) { enemies.splice(i, 1); continue; }
@@ -1108,7 +1186,7 @@ function update() {
     screenShake.update();
     checkCollisions();
 
-    if (!(mpMode === 'coop' && playerIndex === 2)) checkWaveEnd();
+    if (!(mpMode === 'coop' && playerIndex !== 1)) checkWaveEnd();
 
     updateDamageNumbers();
     updateHUD();
@@ -1117,6 +1195,18 @@ function update() {
     if (mpMode && socket) {
         sendPlayerState();
         if (mpMode === 'coop' && playerIndex === 1) sendEnemySync();
+        if (score > highScore) { highScore = score; localStorage.setItem('mechoScore', highScore); }
+    }
+
+    // Update Damage Texts
+    if (window.damageTexts) {
+        for (let i = window.damageTexts.length - 1; i >= 0; i--) {
+            let dt = window.damageTexts[i];
+            dt.x += dt.vx;
+            dt.y += dt.vy;
+            dt.life--;
+            if (dt.life <= 0) window.damageTexts.splice(i, 1);
+        }
     }
 }
 
@@ -1133,14 +1223,6 @@ function draw() {
     
     // Apply Camera Translation
     ctx.translate(canvas.width / 2 - window.camera.x, canvas.height / 2 - window.camera.y);
-
-    // Draw Map Bounds
-    ctx.strokeStyle = '#00f3ff';
-    ctx.lineWidth = 4;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#00f3ff';
-    ctx.strokeRect(0, 0, window.WORLD_WIDTH, window.WORLD_HEIGHT);
-    ctx.shadowBlur = 0;
     
     // Draw Planets
     window.planets.forEach(p => p.draw(ctx));
@@ -1149,7 +1231,7 @@ function draw() {
     powerups.forEach(p => p.draw(ctx));
 
     // Draw enemies: local for host/singleplayer, remote for coop client
-    if (mpMode === 'coop' && playerIndex === 2) {
+    if (mpMode === 'coop' && playerIndex !== 1) {
         drawRemoteEnemies(ctx);
     } else {
         enemies.forEach(e => e.draw(ctx));
@@ -1160,14 +1242,34 @@ function draw() {
     // Draw this player
     player.draw(ctx);
 
-    // Draw opponent (multiplayer)
-    if (mpMode && opponentState) drawOpponent(ctx);
+    // Draw opponent
+    if (mpMode) {
+        for (const [id, oppState] of Object.entries(remotePlayers)) {
+            drawOpponent(ctx, oppState);
+        }
+    }
 
-    if (particles.particles.length > 0) particles.draw(ctx);
-    drawDamageNumbers(ctx);
+    if (particles && particles.draw) particles.draw(ctx);
+    
+    // Draw Damage Texts
+    if (window.damageTexts) {
+        for (const dt of window.damageTexts) {
+            ctx.save();
+            const alpha = Math.max(0, dt.life / dt.maxLife);
+            ctx.globalAlpha = alpha;
+            ctx.font = dt.isCrit ? 'bold 24px Orbitron' : 'bold 18px Orbitron';
+            ctx.fillStyle = dt.isCrit ? '#ff003c' : '#ffffff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.textAlign = 'center';
+            ctx.strokeText(dt.text, dt.x, dt.y);
+            ctx.fillText(dt.text, dt.x, dt.y);
+            ctx.restore();
+        }
+    }
 
     // Boss wave overlay (host only or single-player)
-    if (!(mpMode === 'coop' && playerIndex === 2)) {
+    if (!(mpMode === 'coop' && playerIndex !== 1)) {
         const isBossWave = waveNumber % 10 === 0 && bossAlive;
         if (isBossWave) {
             ctx.restore(); // Temp restore for HUD element
@@ -1187,8 +1289,9 @@ function draw() {
     }
 
     // PvP: show opponent health in HUD (updates via received state)
-    if (mpMode === 'pvp' && opponentState && opponentState.health !== undefined) {
-        updateOppHealthBar(opponentState.health);
+    if (mpMode === 'pvp') {
+        // Find if we have any enemies left to determine overall enemy health state, or just hide it
+        oppHPContainer.classList.add('hidden');
     }
 
     ctx.restore();
@@ -1216,8 +1319,13 @@ function endGame() {
     oppHPContainer.classList.add('hidden');
     gameOverScreen.classList.remove('hidden');
     finalScoreEl.innerText = Math.floor(score);
-    finalGearsEl.innerText = gears;
     if (finalWaveEl) finalWaveEl.innerText = waveNumber;
+    
+    const earned = Math.floor(score / 50);
+    addCoins(earned);
+    
+    const finalCoinsDisp = document.getElementById('finalCoins');
+    if (finalCoinsDisp) finalCoinsDisp.innerText = sessionCoins;
 
     // Hide in-game UI panels
     const statsToggleBtnEnd = document.getElementById('stats-toggle-btn');
@@ -1238,8 +1346,6 @@ function endGame() {
         socket.emit('player_died');
     }
 
-    const earned = Math.floor(score / 50) + gears * 10;
-    coins += earned;
     saveGameData();
     updateShopUI();
 
@@ -1254,10 +1360,13 @@ function showVictory() {
     oppHPContainer.classList.add('hidden');
     victoryScr.classList.remove('hidden');
     victoryScoreEl.innerText = Math.floor(score);
-    victoryGearsEl.innerText = gears;
-
-    const earned = Math.floor(score / 50) + gears * 10 + 500; // Bonus for victory
-    coins += earned;
+    const victoryCoinsEl = document.getElementById('victoryCoins');
+    
+    const earned = Math.floor(score / 50) + 500; // Bonus for victory
+    addCoins(earned);
+    
+    const victoryCoinsDisp = document.getElementById('victoryCoins');
+    if (victoryCoinsDisp) victoryCoinsDisp.innerText = sessionCoins;
     saveGameData();
     updateShopUI();
 
@@ -1312,6 +1421,31 @@ if (sfxSlider) {
     });
 }
 
+function returnToMenu() {
+    gameState = 'menu';
+    
+    // Hide game UI
+    hud.classList.add('hidden');
+    oppHPContainer.classList.add('hidden');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const victoryScr = document.getElementById('victory-screen');
+    if (gameOverScreen) gameOverScreen.classList.add('hidden');
+    if (victoryScr) victoryScr.classList.add('hidden');
+    
+    // Show main menu
+    mainMenu.classList.remove('hidden');
+    
+    // Reset network state
+    if (socket) socket.emit('cancel_search');
+    mpMode = null; playerIndex = 0; remotePlayers = {}; myTeam = 1;
+    
+    // Reset camera so the lobby background returns to the center of the world
+    if (window.WORLD_WIDTH) {
+        window.camera.x = window.WORLD_WIDTH / 2;
+        window.camera.y = window.WORLD_HEIGHT / 2;
+    }
+}
+
 mobileStealthBtn.addEventListener('click', () => {
     if (gameState === 'playing') {
         keys[' '] = true;
@@ -1327,7 +1461,15 @@ mobileTongueBtn.addEventListener('touchend', (e) => { e.preventDefault(); if (ga
 playBtn.addEventListener('click', (e) => {
     e.target.blur();
     if (gameState === 'playing') return;
-    mpMode = null; playerIndex = 0; opponentState = null;
+    
+    // Reset camera so the lobby background returns to the center of the world
+    if (window.WORLD_WIDTH) {
+        window.camera.x = window.WORLD_WIDTH / 2;
+        window.camera.y = window.WORLD_HEIGHT / 2;
+    }
+    
+    mpMode = null; playerIndex = 0; remotePlayers = {}; myTeam = 1;
+    if (socket) socket.emit('cancel_search');
     if (!audio) audio = new AudioSystem();
 
     const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -1513,8 +1655,7 @@ restartBtn.addEventListener('click', (e) => {
 
 menuFromGameOverBtn.addEventListener('click', (e) => {
     e.target.blur();
-    gameOverScreen.classList.add('hidden');
-    mainMenu.classList.remove('hidden');
+    returnToMenu();
 });
 
 const exitGameBtn = document.getElementById('exit-game-btn');
@@ -1525,6 +1666,7 @@ if (exitGameBtn) {
             endGame();
             document.getElementById('stats-panel').classList.add('hidden');
             if (socket) socket.emit('player_died');
+            returnToMenu();
         }
     });
 }
@@ -1622,9 +1764,11 @@ function findMatch(mode) {
         socket = io();
         setupSocketListeners();
     }
+    const select = document.getElementById('player-count-select');
+    const maxPlayers = select ? parseInt(select.value) : 2;
     mpMode = mode;
     showLobbyScreen(mode);
-    socket.emit('find_match', { mode });
+    socket.emit('find_match', { mode, maxPlayers });
 }
 
 function setupSocketListeners() {
@@ -1638,13 +1782,12 @@ function setupSocketListeners() {
         }
     });
 
-    socket.on('match_found', ({ mode, playerIndex: idx }) => {
+    socket.on('match_found', ({ mode, playerIndex: idx, team }) => {
         mpMode = mode;
         playerIndex = idx;
-        opponentState = null;
-        pvpOpponentHealth = 100;
-        tongueHitOpp = false;
-
+        myTeam = team;
+        remotePlayers = {};
+        
         const modeLabel = mode === 'coop' ? '🤝 CO-OP' : '⚔️ PvP';
         const roleLabel = idx === 1 ? 'HOST (P1)' : 'CLIENT (P2)';
         lobbyStatus.innerText = `✅ Match found: ${modeLabel}! You are ${roleLabel}. Starting...`;
@@ -1655,9 +1798,6 @@ function setupSocketListeners() {
             showLoadingScreen('LOADING MATCH...', 1500, () => {
                 initGame();
                 if (mpMode === 'pvp') {
-                    if (playerIndex === 1) player.x = 200;
-                    else player.x = canvas.width - 200;
-                    player.y = canvas.height / 2;
                     gameState = 'countdown';
                     showCountdownScreen(() => {
                         gameState = 'playing';
@@ -1681,9 +1821,6 @@ function setupSocketListeners() {
         showLoadingScreen('RELOADING MATCH...', 1000, () => {
             initGame();
             if (mpMode === 'pvp') {
-                if (playerIndex === 1) player.x = 200;
-                else player.x = canvas.width - 200;
-                player.y = canvas.height / 2;
                 gameState = 'countdown';
                 showCountdownScreen(() => {
                     gameState = 'playing';
@@ -1692,8 +1829,10 @@ function setupSocketListeners() {
         });
     });
 
-    socket.on('opponent_state', (data) => {
-        opponentState = data;
+    socket.on('player_state', (data) => {
+        if (data.id && data.id !== socket.id) {
+            remotePlayers[data.id] = data;
+        }
         // Update opponent HP bar in PvP
         if (mpMode === 'pvp' && data.health !== undefined) {
             pvpOpponentHealth = data.health;
@@ -1702,13 +1841,12 @@ function setupSocketListeners() {
 
     // Co-op: receive enemy positions from host
     socket.on('enemy_sync', (data) => {
-        if (mpMode !== 'coop' || playerIndex !== 2) return;
+        if (mpMode !== 'coop' || playerIndex === 1) return;
         remoteEnemies = data.enemies || [];
         if (data.waveNumber !== undefined && data.waveNumber !== waveNumber) {
             waveNumber = data.waveNumber;
             if (waveDisplay) waveDisplay.innerText = waveNumber;
         }
-        if (data.waveAnnounce) showWaveAnnounce(data.waveAnnounce);
     });
 
     // Co-op HOST: client hit an enemy — apply damage
@@ -1734,21 +1872,37 @@ function setupSocketListeners() {
         if (screenShake) screenShake.trigger(5, 8);
     });
 
-    // PvP: opponent died — this player wins!
-    socket.on('opponent_died', () => {
-        if (mpMode === 'pvp' && gameState === 'playing') {
-            showVictory();
+    socket.on('opponent_died', (data) => {
+        if (data.team !== myTeam) {
+            showUpgradeText('ENEMY ELIMINATED!');
+        } else {
+            showUpgradeText('TEAMMATE DIED!');
+        }
+        if (audio) audio.playSound('explosion');
+        // Determine if victory condition met? (For now just a message)
+    });
+
+    socket.on('reward_coins', (amount) => {
+        addCoins(amount);
+        showUpgradeText(`+${amount} XU!`);
+    });
+
+    socket.on('opponent_disconnected', (data) => {
+        console.log('A player disconnected');
+        if (data.id && remotePlayers[data.id]) {
+            delete remotePlayers[data.id];
+        } else {
+            // If it's a co-op match and the host leaves, maybe end game
+            if (mpMode === 'coop' && data.id === socket.id) { // wait, host disconnecting logic is slightly different
+                // I will keep it simple for now, if the host leaves, the server handles it (host_migrated).
+                // Actually the data contains the disconnected player's id.
+            }
         }
     });
 
-    socket.on('opponent_disconnected', () => {
-        if (gameState === 'playing') {
-            opponentState = null;
-            showWaveAnnounce('⚠️ Opponent disconnected!');
-            setTimeout(() => {
-                if (gameState === 'playing') endGame();
-            }, 2500);
-        }
+    socket.on('host_migrated', () => {
+        console.log('Host migrated to me!');
+        playerIndex = 1;
     });
 
     socket.on('disconnect', () => {
@@ -1760,8 +1914,10 @@ function setupSocketListeners() {
 
 // Send this player's state to server 
 function sendPlayerState() {
-    if (!socket || !socket.connected || gameState !== 'playing') return;
+    if (!socket || !socket.connected || !mpMode || playerHealth <= 0) return;
     socket.emit('player_state', {
+        id: socket.id,
+        team: myTeam,
         x: player.x,
         y: player.y,
         angle: player.angle,
@@ -1779,9 +1935,18 @@ function sendPlayerState() {
         lasers: player.lasers ? player.lasers.map(l => ({ x: l.x, y: l.y, angle: l.angle, color: l.color, alpha: l.alpha })) : [],
         health: playerHealth,
         equipped: player.equipped,
+        hue: player.hue,
+        radius: player.radius,
+        bodyPulse: player.bodyPulse,
+        isMoving: player.isMoving,
+        titanBreathActive: player.titanBreathActive,
+        railgunRecoil: player.railgunRecoil,
+        hammerAnim: player.hammerAnim,
         armsPunchAnimL: player.armsPunchAnimL,
         armsPunchAnimR: player.armsPunchAnimR,
-        armsAngle: player.armsAngle
+        armsAngle: player.armsAngle,
+        eyeX: player.eyeX,
+        eyeY: player.eyeY
     });
 }
 
@@ -1833,14 +1998,19 @@ function showLobbyScreen(mode) {
 }
 
 // Draw remote player (opponent) 
-function drawOpponent(ctx) {
-    if (!opponentState) return;
+function drawOpponent(ctx, oppState) {
+    if (!oppState) return;
     const { x, y, angle, stealthLevel, tongueState, tongueProgress,
-        tongueTargetX, tongueTargetY, buffCount, damageMultiplier, bullets: remoteBullets, lasers: remoteLasers } = opponentState;
+        tongueTargetX, tongueTargetY, buffCount, damageMultiplier, bullets: remoteBullets, lasers: remoteLasers, team } = oppState;
 
-    const col = 'hsl(30, 100%, 55%)'; // Orange for P2
+    let col = 'hsl(30, 100%, 55%)';
+    if (mpMode === 'pvp') {
+        col = team === 1 ? '#00f3ff' : '#ff0044';
+    } else {
+        col = oppState.hue ? `hsl(${oppState.hue}, 100%, 55%)` : 'hsl(30, 100%, 55%)'; 
+    }
     const alpha = Math.max(0.07, 1 - (stealthLevel || 0));
-    const radius = 18;
+    const radius = oppState.radius || 15;
 
     // Draw opponent's bullets
     if (remoteBullets) {
@@ -1848,8 +2018,8 @@ function drawOpponent(ctx) {
             ctx.save();
             ctx.beginPath();
             ctx.arc(b.x, b.y, b.radius || 4, 0, Math.PI * 2);
-            ctx.fillStyle = '#ff8800';
-            ctx.shadowBlur = 10; ctx.shadowColor = '#ff8800';
+            ctx.fillStyle = col;
+            ctx.shadowBlur = 10; ctx.shadowColor = col;
             ctx.fill();
             ctx.restore();
         }
@@ -1878,15 +2048,15 @@ function drawOpponent(ctx) {
         ctx.save();
         ctx.globalAlpha = alpha * 0.25;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tipX, tipY);
-        ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 8;
-        ctx.shadowBlur = 18; ctx.shadowColor = '#ff8800';
+        ctx.strokeStyle = col; ctx.lineWidth = 8;
+        ctx.shadowBlur = 18; ctx.shadowColor = col;
         ctx.stroke();
         ctx.globalAlpha = alpha;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tipX, tipY);
-        ctx.strokeStyle = '#ffaa44'; ctx.lineWidth = 3; ctx.shadowBlur = 8;
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.shadowBlur = 8;
         ctx.stroke();
         ctx.beginPath(); ctx.arc(tipX, tipY, 7, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff'; ctx.shadowBlur = 14; ctx.shadowColor = '#ff8800'; ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.shadowBlur = 14; ctx.shadowColor = col; ctx.fill();
         ctx.restore();
     }
 
@@ -1894,51 +2064,74 @@ function drawOpponent(ctx) {
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    // Robot Arms for Opponent
-    if (opponentState.equipped && (stealthLevel || 0) < 0.8 && typeof Player !== 'undefined' && Player.prototype._drawRobotArms) {
-        opponentState.radius = radius;
-        Player.prototype._drawRobotArms.call(opponentState, ctx, alpha, col);
+    if (oppState.equipped && oppState.equipped.titan_blue && typeof Player !== 'undefined' && Player.prototype._drawTitan) {
+        oppState.bodyPulse = oppState.bodyPulse || 0;
+        oppState.isMoving = oppState.isMoving || false;
+        oppState.railgunRecoil = oppState.railgunRecoil || 0;
+        oppState.hammerAnim = oppState.hammerAnim || 0;
+        oppState.titanBreathActive = oppState.titanBreathActive || false;
+        oppState.stealthLevel = oppState.stealthLevel || 0;
+        oppState.radius = radius;
+        oppState.angle = angle || 0;
+        
+        Player.prototype._drawTitan.call(oppState, ctx);
+    } else if (typeof Player !== 'undefined' && Player.prototype._drawChameleonBody) {
+        oppState.bodyPulse = oppState.bodyPulse || 0;
+        oppState.hue = oppState.hue || 30;
+        oppState.eyeX = oppState.eyeX || (Math.cos(angle || 0) * radius * 0.4);
+        oppState.eyeY = oppState.eyeY || (Math.sin(angle || 0) * radius * 0.4);
+        oppState.damageMultiplier = oppState.damageMultiplier || 1;
+        oppState.stealthLevel = oppState.stealthLevel || 0;
+        oppState.radius = radius;
+        oppState.angle = angle || 0;
+        
+        // Ensure hue overrides in PvP
+        if (mpMode === 'pvp') {
+            oppState.hue = team === 1 ? 180 : 0; // Cyan or Red hue
+        }
+        
+        Player.prototype._drawChameleonBody.call(oppState, ctx);
+    } else {
+        // Fallback Hexagon if player object not available
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            const px = x + Math.cos(a) * radius;
+            const py = y + Math.sin(a) * radius;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        grad.addColorStop(0, 'rgba(255,255,255,0.5)');
+        grad.addColorStop(1, col);
+        ctx.fillStyle = grad;
+        ctx.shadowBlur = 12; ctx.shadowColor = col;
+        ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
-    // Outer glow ring
-    ctx.beginPath();
-    ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
-    ctx.strokeStyle = col; ctx.lineWidth = 2;
-    ctx.shadowBlur = 20; ctx.shadowColor = col;
-    ctx.globalAlpha = alpha * 0.25; ctx.stroke();
-    ctx.globalAlpha = alpha;
-
-    // Hexagon body
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        const px = x + Math.cos(a) * radius;
-        const py = y + Math.sin(a) * radius;
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    // Ring Team Indicator
+    if (mpMode === 'pvp') {
+        ctx.beginPath();
+        ctx.arc(x, y, radius + 15, 0, Math.PI * 2);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
     }
-    ctx.closePath();
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    grad.addColorStop(0, 'hsl(30, 80%, 75%)');
-    grad.addColorStop(1, 'hsl(30, 100%, 28%)');
-    ctx.fillStyle = grad;
-    ctx.shadowBlur = 12; ctx.shadowColor = col;
-    ctx.fill();
-    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
-
-    // Eye
-    const eyeX = x + Math.cos(angle) * radius * 0.4;
-    const eyeY = y + Math.sin(angle) * radius * 0.4;
-    ctx.beginPath(); ctx.arc(eyeX, eyeY, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff8800'; ctx.fill();
-    ctx.beginPath(); ctx.arc(eyeX, eyeY, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff8800'; ctx.fill();
 
     // P2 label above
     ctx.globalAlpha = 0.9;
     ctx.font = 'bold 10px Orbitron, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffaa44'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff8800';
-    ctx.fillText(mpMode === 'pvp' ? '⚔️ ENEMY' : '🤝 P2', x, y - radius - 14);
+    ctx.fillStyle = col; ctx.shadowBlur = 8; ctx.shadowColor = col;
+    
+    let label = '🤝 CO-OP';
+    if (mpMode === 'pvp') {
+        label = team === myTeam ? '🤝 TEAMMATE' : '⚔️ ENEMY';
+    }
+    ctx.fillText(label, x, y - radius - 25);
 
     // Buff indicator
     if (buffCount > 0) {
