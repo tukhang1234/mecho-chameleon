@@ -210,10 +210,10 @@ class Enemy {
         this.x += this.vx;
         this.y += this.vy;
 
-        if (this.x < -60) this.x = window.innerWidth + 60;
-        if (this.x > window.innerWidth + 60) this.x = -60;
-        if (this.y < -60) this.y = window.innerHeight + 60;
-        if (this.y > window.innerHeight + 60) this.y = -60;
+        if (this.x < -60) this.x = window.WORLD_WIDTH + 60;
+        if (this.x > window.WORLD_WIDTH + 60) this.x = -60;
+        if (this.y < -60) this.y = window.WORLD_HEIGHT + 60;
+        if (this.y > window.WORLD_HEIGHT + 60) this.y = -60;
     }
 
     draw(ctx) {
@@ -374,9 +374,9 @@ class Boss extends Enemy {
 
         // Boundary bounce
         if (this.x < this.radius) { this.x = this.radius; this.vx *= -0.5; }
-        if (this.x > window.innerWidth  - this.radius) { this.x = window.innerWidth  - this.radius; this.vx *= -0.5; }
+        if (this.x > window.WORLD_WIDTH  - this.radius) { this.x = window.WORLD_WIDTH  - this.radius; this.vx *= -0.5; }
         if (this.y < this.radius) { this.y = this.radius; this.vy *= -0.5; }
-        if (this.y > window.innerHeight - this.radius) { this.y = window.innerHeight - this.radius; this.vy *= -0.5; }
+        if (this.y > window.WORLD_HEIGHT - this.radius) { this.y = window.WORLD_HEIGHT - this.radius; this.vy *= -0.5; }
 
         // Boss attack: shoot projectiles based on type
         const shootInterval = Math.max(30, 90 - this.bossType * 10);

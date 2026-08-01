@@ -16,7 +16,6 @@ titanAssets.hammerIdle.src = 'pictuer/Screenshot_2026-07-30_082036-removebg-prev
 titanAssets.hammerRaised.src = 'pictuer/Screenshot_2026-07-30_082218-removebg-preview.png';
 titanAssets.hammerSmash.src = 'pictuer/Screenshot_2026-07-30_082157-removebg-preview.png';
 
-// Đạn thường
 class Bullet {
     constructor(x, y, vx, vy, color, damage, radius = 5) {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.color = color; this.damage = damage; this.radius = radius; this.life = 80; this.hit = false;
@@ -28,41 +27,6 @@ class Bullet {
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.shadowBlur = 12; ctx.shadowColor = this.color; ctx.fill();
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 1.5, 0, Math.PI * 2); ctx.fillStyle = this.color; ctx.globalAlpha = alpha * 0.4; ctx.fill();
         ctx.restore();
-    }
-}
-
-// SIÊU ĐẠN NỔ CỦA TITAN (Gây Dame Lan)
-class ExplosiveBullet extends Bullet {
-    constructor(x, y, vx, vy, color, damage, radius) {
-        super(x, y, vx, vy, color, damage, radius);
-        this.exploded = false;
-        this.isExplosive = true;
-    }
-    update() {
-        this.x += this.vx; this.y += this.vy; this.life--;
-        if ((this.life <= 0 || this.hit) && !this.exploded) {
-            this.explode();
-        }
-    }
-    explode() {
-        this.exploded = true;
-        if (typeof particles !== 'undefined') {
-            for (let i = 0; i < 25; i++) {
-                const a = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 8 + 2;
-                particles.particles.push({ x: this.x, y: this.y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, color: '#00f3ff', life: 30, maxLife: 30, size: Math.random() * 6 + 4, trail: [] });
-            }
-        }
-        if (typeof enemies !== 'undefined') {
-            for (const e of enemies) {
-                if (!e.dead && Math.hypot(e.x - this.x, e.y - this.y) < 160) {
-                    if (e.takeDamage && e.takeDamage(this.damage * 0.7, e.x, e.y).dead) {
-                        let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
-                    }
-                }
-            }
-        }
-        if (typeof screenShake !== 'undefined') screenShake.trigger(6, 6);
     }
 }
 
@@ -86,16 +50,18 @@ class Laser {
 class Player {
     constructor(x, y) {
         this.x = x; this.y = y;
-        this.vx = 0; this.vy = 0;
         this.radius = 18;
         this.speed = 4;
         this.angle = 0;
+        this.invulnTimer = 0;
 
-        // Stealth & Tongue (Base Chameleon)
+        // Stealth & Chameleon
         this.stealthLevel = 0;
         this.stealthCooldown = 0;
         this.maxStealthCooldown = 300;
         this.emergencyStealthActive = false;
+
+        // Tongue
         this.tongueState = 'idle';
         this.tongueTargetX = 0; this.tongueTargetY = 0;
         this.tongueProgress = 0; this.tongueSpeed = 0.12;
@@ -108,26 +74,24 @@ class Player {
         this.bullets = []; this.lasers = [];
         this.gunCooldown = 0; this.laserCooldown = 0; this.missileCooldown = 0;
 
-        // Robot Arms
+        // Mecha Arms
         this.armsCooldown = 0;
         this.armsPunchAnimL = 0; this.armsPunchAnimR = 0;
         this.armsAngle = 0;
 
-        // Titan Features
-        this.shockwaves = [];
+        // Titan States
         this.energy = 100;
         this.maxEnergy = 100;
         this.titanBreathActive = false;
         this.railgunRecoil = 0;
         this.hammerAnim = 0;
+        this.titanAttackCd = 0;
 
-        // Hồi chiêu vũ khí
-        this.titanGunCd = 0;
-        this.titanHammerCd = 0;
-
-        // Stats & Visuals
-        this.damageMultiplier = 1.0;
+        // Stats
         this.buffCount = 0;
+        this.damageMultiplier = 1.0;
+
+        // Visual
         this.bodyPulse = 0; this.hue = 180;
         this.eyeX = 0; this.eyeY = 0;
     }
@@ -145,60 +109,42 @@ class Player {
         }
     }
 
-    get finalDamage() { return Math.round(this.tongueDamage * this.damageMultiplier); }
+    get finalDamage() {
+        return Math.round(this.tongueDamage * this.damageMultiplier);
+    }
 
     update(keys, mouse, canvas) {
         let dx = 0, dy = 0;
-        const isTitan = this.equipped && this.equipped.titan_blue;
+        this.isMoving = false;
 
-        if (keys['w'] || keys['ArrowUp']) { dy -= 1; }
-        if (keys['s'] || keys['ArrowDown']) { dy += 1; }
-        if (keys['a'] || keys['ArrowLeft']) { dx -= 1; }
-        if (keys['d'] || keys['ArrowRight']) { dx += 1; }
+        const isTitan = this.equipped && this.equipped.titan_blue;
+        const currentSpeed = isTitan ? 1.8 : this.speed;
+
+        if (keys['w'] || keys['ArrowUp']) { dy -= 1; this.isMoving = true; }
+        if (keys['s'] || keys['ArrowDown']) { dy += 1; this.isMoving = true; }
+        if (keys['a'] || keys['ArrowLeft']) { dx -= 1; this.isMoving = true; }
+        if (keys['d'] || keys['ArrowRight']) { dx += 1; this.isMoving = true; }
 
         if (dx !== 0 && dy !== 0) { const l = Math.hypot(dx, dy); dx /= l; dy /= l; }
+        this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x + dx * currentSpeed));
+        this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y + dy * currentSpeed));
 
-        if (isTitan) {
-            this.vx += dx * 0.9;
-            this.vy += dy * 0.9;
-            this.vx *= 0.88;
-            this.vy *= 0.88;
-            this.x = Math.max(this.radius, Math.min(window.WORLD_WIDTH - this.radius, this.x + this.vx));
-            this.y = Math.max(this.radius, Math.min(window.WORLD_HEIGHT - this.radius, this.y + this.vy));
-            this.isMoving = (Math.abs(this.vx) > 0.5 || Math.abs(this.vy) > 0.5);
-        } else {
-            this.x = Math.max(this.radius, Math.min(window.WORLD_WIDTH - this.radius, this.x + dx * this.speed));
-            this.y = Math.max(this.radius, Math.min(window.WORLD_HEIGHT - this.radius, this.y + dy * this.speed));
-            this.isMoving = (dx !== 0 || dy !== 0);
-        }
-
-        // Toàn thân luôn nhìn theo chuột
         this.angle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
         this.eyeX = Math.cos(this.angle) * this.radius * 0.4;
         this.eyeY = Math.sin(this.angle) * this.radius * 0.4;
-        this.bodyPulse += isTitan ? 0.08 : 0.05;
+        this.bodyPulse += 0.05;
 
+        // Phân nhánh logic: Titan hoặc Tắc Kè thường (Mecha Arms)
         if (isTitan) {
-            this.updateTitanLogic(keys, mouse);
+            this.updateTitanLogic(mouse);
         } else {
             this.updateChameleonLogic(keys, mouse);
         }
 
-        // Cập nhật Sóng Xung Kích
-        for (let i = this.shockwaves.length - 1; i >= 0; i--) {
-            let sw = this.shockwaves[i];
-            sw.radius += 20;
-            sw.life -= 0.04;
-            if (sw.life <= 0) this.shockwaves.splice(i, 1);
-        }
-
-        // Cập nhật Đạn
+        // Cập nhật đạn và laser chung
         for (let i = this.bullets.length - 1; i >= 0; i--) {
             this.bullets[i].update();
-            if (this.bullets[i].life <= 0 || (this.bullets[i].hit && !this.bullets[i].isExplosive)) {
-                if (this.bullets[i].isExplosive && !this.bullets[i].exploded) this.bullets[i].explode();
-                this.bullets.splice(i, 1);
-            }
+            if (this.bullets[i].life <= 0 || this.bullets[i].hit) this.bullets.splice(i, 1);
         }
         for (let i = this.lasers.length - 1; i >= 0; i--) {
             this.lasers[i].update();
@@ -206,122 +152,68 @@ class Player {
         }
     }
 
-    updateTitanLogic(keys, mouse) {
+    updateTitanLogic(mouse) {
         this.energy = Math.min(this.maxEnergy, this.energy + 0.05);
 
-        // LÕI PHUN LỬA (Nhấn giữ Chuột Phải)
         if (mouse.rightDown && this.energy > 2) {
             this.titanBreathActive = true;
             this.energy -= 1.5;
-            
-            if (!this.titanFireSoundCd || this.titanFireSoundCd <= 0) {
-                if (typeof audio !== 'undefined') audio.playSound('fire');
-                this.titanFireSoundCd = 25; // Cooldown to match sound duration
-            } else {
-                this.titanFireSoundCd--;
-            }
-
-            if (typeof enemies !== 'undefined') {
-                for (const e of enemies) {
-                    if (e.dead) continue;
-                    const dist = Math.hypot(e.x - this.x, e.y - this.y);
-                    if (dist < 800) {
-                        const angleToEnemy = Math.atan2(e.y - this.y, e.x - this.x);
-                        let eDiff = angleToEnemy - this.angle;
-                        while (eDiff <= -Math.PI) eDiff += Math.PI * 2;
-                        while (eDiff > Math.PI) eDiff -= Math.PI * 2;
-
-                        if (Math.abs(eDiff) < 0.85) {
-                            if (e.takeDamage && e.takeDamage(35, e.x, e.y).dead) {
-                                let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
-                            }
-                        }
-                    }
-                }
-            }
-
-            for (let i = 0; i < 4; i++) {
-                const spread = (Math.random() - 0.5) * 0.8;
+            if (Math.random() < 0.6) {
+                const spread = (Math.random() - 0.5) * 1.0;
                 const pAngle = this.angle + spread;
-                const pSpeed = 16 + Math.random() * 12;
+                const pSpeed = 8 + Math.random() * 5;
                 particles.particles.push({
                     x: this.x + Math.cos(this.angle) * 25, y: this.y + Math.sin(this.angle) * 25,
                     vx: Math.cos(pAngle) * pSpeed, vy: Math.sin(pAngle) * pSpeed,
-                    color: Math.random() > 0.3 ? '#00f3ff' : '#ffffff',
-                    life: 50, maxLife: 50, size: Math.random() * 18 + 8, trail: []
+                    color: Math.random() > 0.4 ? '#00f3ff' : '#ffffff',
+                    life: 35, maxLife: 35, size: Math.random() * 10 + 6, trail: []
                 });
             }
         } else {
             this.titanBreathActive = false;
         }
 
-        // BẮN SÚNG TỪ NÒNG (Nhấp Chuột Trái)
-        if (mouse.down && this.titanGunCd <= 0) {
-            // CÔNG THỨC CHUẨN XÁC TÍNH TỌA ĐỘ NÒNG SÚNG BÊN TAY TRÁI
-            const scale = 0.8;
-            const gunX_local = 99;   // Tọa độ sang trái (+99 theo trục ngang)
-            const gunY_local = 140;  // Vươn tới mũi nòng súng
+        if (this.titanAttackCd <= 0 && typeof enemies !== 'undefined') {
+            let target = null, minDist = 450;
+            for (const e of enemies) {
+                if (e.dead) continue;
+                const dist = Math.hypot(e.x - this.x, e.y - this.y);
+                if (dist < minDist) { minDist = dist; target = e; }
+            }
 
-            // Tính toán Matrix 2D chuyển đổi Local sang World (Tính luôn góc xoay của thân)
-            const barrelX = this.x + scale * (gunX_local * Math.sin(this.angle) + gunY_local * Math.cos(this.angle));
-            const barrelY = this.y + scale * (-gunX_local * Math.cos(this.angle) + gunY_local * Math.sin(this.angle));
-            
-            // Tính toán hướng ngắm về phía chuột
-            const aimAngle = Math.atan2(mouse.y - barrelY, mouse.x - barrelX);
-
-            this.bullets.push(new ExplosiveBullet(barrelX, barrelY, Math.cos(aimAngle) * 24, Math.sin(aimAngle) * 24, '#00f3ff', 100, 16));
-            this.railgunRecoil = 35;
-            if (typeof screenShake !== 'undefined') screenShake.trigger(5, 5);
-            if (typeof audio !== 'undefined') audio.playSound('laser');
-            this.titanGunCd = 12;
-        }
-
-        // ĐẬP BÚA (Nhấn phím F hoặc phím E)
-        if ((keys['f'] || keys['F'] || keys['e'] || keys['E']) && this.titanHammerCd <= 0) {
-            this.hammerAnim = 1.0;
-
-            // CÔNG THỨC CHUẨN XÁC TÍNH TỌA ĐỘ ĐẦU BÚA BÊN TAY PHẢI
-            const scale = 0.8;
-            const hammerX_local = -78;  // Tọa độ sang phải (-78)
-            const hammerY_local = 130;  // Vươn tới đầu búa
-
-            const hx = this.x + scale * (hammerX_local * Math.sin(this.angle) + hammerY_local * Math.cos(this.angle));
-            const hy = this.y + scale * (-hammerX_local * Math.cos(this.angle) + hammerY_local * Math.sin(this.angle));
-
-            // Phát sóng xung kích lan ra đúng từ vị trí đầu búa đập xuống
-            this.shockwaves.push({ x: hx, y: hy, radius: 0, life: 1.0 });
-
-            if (typeof enemies !== 'undefined') {
-                for (const e of enemies) {
-                    if (!e.dead && Math.hypot(e.x - hx, e.y - hy) < 200) {
-                        const dx = e.x - hx;
-                        const dy = e.y - hy;
-                        const distToCenter = Math.hypot(dx, dy) || 1;
-
-                        e.x += (dx / distToCenter) * 90; // Hất văng
-                        e.y += (dy / distToCenter) * 90;
-
-                        if (e.takeDamage && e.takeDamage(200, e.x, e.y).dead) {
-                            let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
+            if (target || mouse.down) {
+                const aimAngle = target ? Math.atan2(target.y - this.y, target.x - this.x) : this.angle;
+                if (Math.random() > 0.5) {
+                    this.bullets.push(new Bullet(this.x, this.y, Math.cos(aimAngle) * 18, Math.sin(aimAngle) * 18, '#00f3ff', 80, 8));
+                    this.railgunRecoil = 25;
+                    if (typeof screenShake !== 'undefined') screenShake.trigger(6, 6);
+                } else {
+                    this.hammerAnim = 1.0;
+                    const hx = this.x + Math.cos(aimAngle) * 70;
+                    const hy = this.y + Math.sin(aimAngle) * 70;
+                    for (let i = 0; i < 20; i++) {
+                        const a = (i / 20) * Math.PI * 2;
+                        particles.particles.push({ x: hx, y: hy, vx: Math.cos(a) * 12, vy: Math.sin(a) * 12, color: '#ffdd00', life: 25, maxLife: 25, size: 5, trail: [] });
+                    }
+                    for (const e of enemies) {
+                        if (!e.dead && Math.hypot(e.x - hx, e.y - hy) < 120) {
+                            if (e.takeDamage && e.takeDamage(150, e.x, e.y).dead) {
+                                let idx = enemies.indexOf(e); if (idx > -1) onEnemyDeath(e, idx);
+                            }
                         }
                     }
+                    if (typeof screenShake !== 'undefined') screenShake.trigger(10, 10);
                 }
+                this.titanAttackCd = 50;
             }
-            if (typeof screenShake !== 'undefined') screenShake.trigger(15, 15);
-            if (typeof audio !== 'undefined') audio.playSound('lightning');
-            this.titanHammerCd = 45;
         }
-
-        // Giảm hồi chiêu
-        if (this.titanGunCd > 0) this.titanGunCd--;
-        if (this.titanHammerCd > 0) this.titanHammerCd--;
-
-        // Phục hồi Animation
-        if (this.railgunRecoil > 0) this.railgunRecoil -= 2.0;
+        if (this.titanAttackCd > 0) this.titanAttackCd--;
+        if (this.railgunRecoil > 0) this.railgunRecoil -= 1.5;
         if (this.hammerAnim > 0) this.hammerAnim -= 0.05;
     }
 
     updateChameleonLogic(keys, mouse) {
+        // Stealth
         if (keys[' '] && this.stealthCooldown <= 0) {
             this.emergencyStealthActive = true;
             this.stealthCooldown = this.maxStealthCooldown;
@@ -334,6 +226,7 @@ class Player {
         else if (!this.isMoving) this.stealthLevel = Math.min(0.35, this.stealthLevel + 0.012);
         else this.stealthLevel = Math.max(0, this.stealthLevel - 0.08);
 
+        // Tongue
         if (this.tongueCooldown > 0) this.tongueCooldown--;
         if (mouse.rightDown && this.tongueState === 'idle' && this.tongueCooldown <= 0) this.shootTongue(mouse.x, mouse.y);
 
@@ -353,6 +246,7 @@ class Player {
         }
         this.tongueActive = this.tongueState !== 'idle';
 
+        // Auto Buff Weapons
         if (this.hasGun && this.gunCooldown <= 0) {
             this.gunCooldown = 25;
             this.bullets.push(new Bullet(this.x, this.y, Math.cos(this.angle) * 9, Math.sin(this.angle) * 9, '#00f3ff', Math.round(this.finalDamage * 0.4), 4));
@@ -369,6 +263,7 @@ class Player {
         if (this.hasLaser) this.laserCooldown--;
         if (this.hasMissile) this.missileCooldown--;
 
+        // MECHA ARMS COMBAT LOGIC (M1 -> M6)
         if (this.equipped) {
             const hasM1 = this.equipped.arms_m1, hasM2 = this.equipped.arms_m2;
             const hasM3 = this.equipped.arms_m3, hasM4 = this.equipped.arms_m4;
@@ -388,9 +283,17 @@ class Player {
                     }
                 }
 
+                if (typeof mpMode !== 'undefined' && mpMode === 'pvp' && typeof opponentState !== 'undefined' && opponentState) {
+                    const dist = Math.hypot(opponentState.x - this.x, opponentState.y - this.y);
+                    const e = { x: opponentState.x, y: opponentState.y, isOpponent: true };
+                    if (opponentState.x < this.x) { if (dist < rangeLeft) targetLeft = e; }
+                    else { if (dist < rangeRight) targetRight = e; }
+                }
+
                 if (this.armsCooldown <= 0) {
                     let didPunch = false;
-                    const isAuto = typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true;
+                    const modePvP = typeof mpMode !== 'undefined' && mpMode === 'pvp';
+                    const isAuto = modePvP ? false : (typeof autoAimEnabled !== 'undefined' ? autoAimEnabled : true);
                     const wantsManualFire = !isAuto && typeof mouse !== 'undefined' && mouse.down;
                     let anyTarget = targetLeft || targetRight;
 
@@ -403,6 +306,11 @@ class Player {
                                 }
                             }
                         }
+                        if (anyTarget && anyTarget.isOpponent && Math.random() < 0.1) {
+                            if (typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 20 });
+                            this.lasers.push(new Laser(this.x, this.y, Math.atan2(anyTarget.y - this.y, anyTarget.x - this.x), '#00f3ff', 0, 0.5));
+                        }
+
                         if ((isAuto && anyTarget) || wantsManualFire) {
                             const aimAngle = anyTarget ? Math.atan2(anyTarget.y - this.y, anyTarget.x - this.x) : Math.atan2(mouse.y - this.y, mouse.x - this.x);
                             const fireAngle = isAuto && anyTarget ? aimAngle : Math.atan2(mouse.y - this.y, mouse.x - this.x);
@@ -431,6 +339,10 @@ class Player {
                                 }
                             }
                         }
+                        if (anyTarget && anyTarget.isOpponent && Math.hypot(anyTarget.x - this.x, anyTarget.y - this.y) < 220) {
+                            if (typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 80 });
+                            slashed = true;
+                        }
 
                         if (slashed) {
                             this.armsPunchAnimL = 12; this.armsPunchAnimR = 12; this.armsCooldown = 15; this.armsAngle = this.angle;
@@ -450,11 +362,13 @@ class Player {
                     }
                     else if (hasM1) {
                         if (targetLeft) {
-                            if (targetLeft.takeDamage && targetLeft.takeDamage(35, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
+                            if (targetLeft.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 35 });
+                            else if (targetLeft.takeDamage && targetLeft.takeDamage(35, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
                             didPunch = true; this.armsPunchAnimL = 10;
                         }
                         if (targetRight) {
-                            if (targetRight.takeDamage && targetRight.takeDamage(35, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
+                            if (targetRight.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 35 });
+                            else if (targetRight.takeDamage && targetRight.takeDamage(35, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
                             didPunch = true; this.armsPunchAnimR = 10;
                         }
                         if (didPunch) { if (typeof audio !== 'undefined' && audio) audio.playSound('shoot'); this.armsCooldown = 40; }
@@ -462,11 +376,13 @@ class Player {
                     else if (hasM2 || hasM3 || hasM4) {
                         if (hasM2) {
                             if (targetLeft && Math.hypot(targetLeft.x - this.x, targetLeft.y - this.y) < 180) {
-                                if (targetLeft.takeDamage && targetLeft.takeDamage(40, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
+                                if (targetLeft.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 40 });
+                                else if (targetLeft.takeDamage && targetLeft.takeDamage(40, targetLeft.x, targetLeft.y).dead) { let idx = enemies.indexOf(targetLeft); if (idx > -1) onEnemyDeath(targetLeft, idx); }
                                 didPunch = true; this.armsPunchAnimL = 10;
                             }
                             if (targetRight && Math.hypot(targetRight.x - this.x, targetRight.y - this.y) < 180) {
-                                if (targetRight.takeDamage && targetRight.takeDamage(40, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
+                                if (targetRight.isOpponent && typeof socket !== 'undefined') socket.emit('pvp_hit', { damage: 40 });
+                                else if (targetRight.takeDamage && targetRight.takeDamage(40, targetRight.x, targetRight.y).dead) { let idx = enemies.indexOf(targetRight); if (idx > -1) onEnemyDeath(targetRight, idx); }
                                 didPunch = true; this.armsPunchAnimR = 10;
                             }
                             if (didPunch) { if (typeof audio !== 'undefined' && audio) audio.playSound('shoot'); this.armsCooldown = 35; }
@@ -519,129 +435,14 @@ class Player {
     getTipPosition() { return { x: this.x + (this.tongueTargetX - this.x) * this.tongueProgress, y: this.y + (this.tongueTargetY - this.y) * this.tongueProgress }; }
 
     draw(ctx) {
-        // Vẽ Sóng Xung Kích (Nằm sâu dưới nhân vật và đạn)
-        ctx.save();
-        for (const sw of this.shockwaves) {
-            ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 221, 0, ${sw.life})`;
-            ctx.lineWidth = 15 * sw.life; ctx.shadowBlur = 30; ctx.shadowColor = '#ffdd00'; ctx.stroke();
-        }
-        ctx.restore();
-
         this.bullets.forEach(b => b.draw(ctx));
         this.lasers.forEach(l => l.draw(ctx));
 
         if (this.equipped && this.equipped.titan_blue) {
             this._drawTitan(ctx);
-            this._drawTitanHUD(ctx);
         } else {
             this._drawChameleonBody(ctx);
         }
-    }
-
-    _drawTitanHUD(ctx) {
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 12px "Segoe UI", Arial, sans-serif';
-
-        ctx.fillStyle = '#00f3ff';
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#000';
-        ctx.fillText("🛠️ TITAN MANUAL CONTROL 🛠️", this.x, this.y + 110);
-
-        ctx.fillStyle = '#fff';
-        ctx.font = '11px "Segoe UI", Arial, sans-serif';
-        ctx.fillText("[Chuột Trái]: Bắn Súng  |  [Phím F]: Đập Búa  |  [Chuột Phải]: Phun Lửa", this.x, this.y + 128);
-        ctx.restore();
-    }
-
-    _drawTitan(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.angle - Math.PI / 2);
-        ctx.scale(0.8, 0.8);
-
-        const breath = Math.sin(this.bodyPulse * 2.5) * 5;
-
-        // --- 1. LỬA JETPACK TRÊN LƯNG ---
-        const jetLength = this.isMoving ? 90 + Math.random() * 40 : 40 + Math.random() * 15;
-        const drawJet = (jx, jy) => {
-            const jgrad = ctx.createLinearGradient(0, jy, 0, jy - jetLength);
-            jgrad.addColorStop(0, '#ffffff'); jgrad.addColorStop(0.2, '#00f3ff'); jgrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = jgrad;
-            ctx.beginPath(); ctx.moveTo(jx - 15, jy); ctx.lineTo(jx + 15, jy); ctx.lineTo(jx, jy - jetLength); ctx.fill();
-        };
-        ctx.save();
-        ctx.translate(0, breath);
-        drawJet(-45, -120);
-        drawJet(45, -120);
-        ctx.restore();
-
-        // --- 2. LỬA HỦY DIỆT (Vẽ ở lớp DƯỚI CÙNG để chìm xuống dưới lớp giáp) ---
-        ctx.save();
-        ctx.translate(0, breath);
-        if (this.titanBreathActive) {
-            const grad = ctx.createLinearGradient(0, 10, 0, 800);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-            grad.addColorStop(0.15, 'rgba(0, 243, 255, 0.9)');
-            grad.addColorStop(0.6, 'rgba(0, 100, 255, 0.5)');
-            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.moveTo(0, 10);
-            const spread = 280 + Math.random() * 80;
-            ctx.lineTo(-spread, 800);
-            ctx.lineTo(spread, 800);
-            ctx.closePath();
-            ctx.fill();
-        }
-        ctx.restore();
-
-        // --- 3. VẼ SÚNG TAY TRÁI ---
-        ctx.save();
-        ctx.translate(99, 53 + breath - this.railgunRecoil);
-        ctx.rotate(0);
-        ctx.drawImage(titanAssets.gunArm, -46, -74, 92, 147);
-        ctx.restore();
-
-        // --- 4. VẼ BÚA TAY PHẢI ---
-        ctx.save();
-        ctx.translate(-78, 65 + breath);
-        ctx.rotate(0);
-
-        let hammerImg = titanAssets.hammerIdle;
-        let w = 92, h = 143, ox = -46, oy = -72;
-
-        if (this.hammerAnim > 0.8) {
-            hammerImg = titanAssets.hammerRaised;
-            ctx.translate(0, -25);
-        } else if (this.hammerAnim > 0) {
-            hammerImg = titanAssets.hammerSmash;
-            w = 166; h = 193; ox = -83; oy = -114;
-            ctx.translate(0, 45);
-        }
-        ctx.drawImage(hammerImg, ox, oy, w, h);
-        ctx.restore();
-
-        // --- 5. VẼ THÂN (BODY đè lên ngọn lửa) ---
-        ctx.save();
-        ctx.translate(0, breath);
-        ctx.drawImage(titanAssets.body, -127, -150, 254, 254);
-        ctx.restore();
-
-        // --- 6. VẼ LÕI SÁNG ĐÈ LÊN MỌI THỨ ---
-        ctx.save();
-        ctx.translate(0, breath);
-        ctx.fillStyle = '#00f3ff';
-        ctx.globalAlpha = 0.6 + Math.sin(this.bodyPulse * 5) * 0.4;
-        ctx.shadowBlur = 25; ctx.shadowColor = '#00f3ff';
-        ctx.beginPath(); ctx.arc(0, 10, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 10;
-        ctx.beginPath(); ctx.arc(0, 10, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-
-        ctx.restore();
     }
 
     _drawChameleonBody(ctx) {
@@ -672,14 +473,17 @@ class Player {
         ctx.save();
         ctx.globalAlpha = alpha;
 
+        // Shadow
         ctx.beginPath();
         ctx.ellipse(this.x + 3, this.y + 6, this.radius * 0.9, this.radius * 0.45, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 0; ctx.fill();
 
+        // Outer ring
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 5, 0, Math.PI * 2);
         ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.shadowBlur = glow * 2; ctx.shadowColor = col;
         ctx.globalAlpha = alpha * 0.25; ctx.stroke(); ctx.globalAlpha = alpha;
 
+        // Body hexagon
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
             const a = (i / 6) * Math.PI * 2;
@@ -702,12 +506,14 @@ class Player {
             ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x + Math.cos(a) * this.radius * 0.68, this.y + Math.sin(a) * this.radius * 0.68); ctx.stroke();
         }
 
+        // Eyes
         ctx.globalAlpha = Math.max(0.15, alpha);
         ctx.beginPath(); ctx.arc(this.x + this.eyeX, this.y + this.eyeY, 5, 0, Math.PI * 2);
         ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#ff00ff'; ctx.fill();
         ctx.beginPath(); ctx.arc(this.x + this.eyeX, this.y + this.eyeY, 3, 0, Math.PI * 2);
         ctx.fillStyle = '#ff00ff'; ctx.fill();
 
+        // Stealth Shimmer
         if (this.stealthLevel > 0.2) {
             ctx.globalAlpha = this.stealthLevel * 0.35;
             ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 8 + Math.sin(this.bodyPulse * 3) * 3, 0, Math.PI * 2);
@@ -723,11 +529,13 @@ class Player {
         }
         ctx.restore();
 
+        // Armor Glow
         if (this.equipped && this.equipped.armor && this.stealthLevel < 0.5) {
             ctx.save(); ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
             ctx.strokeStyle = '#39ff14'; ctx.lineWidth = 3; ctx.shadowBlur = 15; ctx.shadowColor = '#39ff14'; ctx.stroke(); ctx.restore();
         }
 
+        // VẼ 6 LOẠI ROBOT ARMS
         if (this.equipped && (this.equipped.arms_m1 || this.equipped.arms_m2 || this.equipped.arms_m3 || this.equipped.arms_m4 || this.equipped.arms_m5 || this.equipped.arms_m6) && this.stealthLevel < 0.8) {
             this._drawRobotArms(ctx, alpha, col);
         }
@@ -749,6 +557,72 @@ class Player {
         ctx.save(); ctx.globalAlpha = alpha; ctx.translate(bx, by); ctx.rotate(a + Math.PI);
         ctx.fillStyle = '#555'; ctx.shadowBlur = 6; ctx.shadowColor = '#ff7700'; ctx.fillRect(0, -6, 10, 12);
         ctx.fillStyle = '#ff7700'; ctx.fillRect(10, -4, 4, 8); ctx.restore();
+    }
+
+    // ==========================================
+    // VẼ CỖ MÁY TITAN (SỬA LỖI XOAY SÚNG)
+    // ==========================================
+    _drawTitan(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        ctx.rotate(this.angle + Math.PI / 2);
+
+        const breath = Math.sin(this.bodyPulse * 1.5) * 2;
+
+        // --- VẼ TAY TRÁI (SÚNG) ---
+        ctx.save();
+        ctx.translate(-50, 0 + breath + this.railgunRecoil);
+        // QUAY SÚNG 180 ĐỘ (Math.PI) ĐỂ NÒNG SÚNG CHĨA LÊN PHÍA TRƯỚC
+        ctx.rotate(Math.PI);
+        ctx.drawImage(titanAssets.gunArm, -25, -60, 50, 120);
+        ctx.restore();
+
+        // --- VẼ TAY PHẢI (BÚA) ---
+        ctx.save();
+        ctx.translate(50, 0 + breath);
+        let hammerImg = titanAssets.hammerIdle;
+        let w = 45, h = 100, ox = -22, oy = -70;
+
+        if (this.hammerAnim > 0.8) {
+            hammerImg = titanAssets.hammerRaised;
+            ctx.translate(0, 15);
+        } else if (this.hammerAnim > 0) {
+            hammerImg = titanAssets.hammerSmash;
+            w = 85; h = 135; ox = -42; oy = -85;
+            ctx.translate(0, -25);
+        }
+        ctx.drawImage(hammerImg, ox, oy, w, h);
+        ctx.restore();
+
+        // --- VẼ THÂN (BODY) ---
+        ctx.save();
+        ctx.translate(0, breath);
+        ctx.drawImage(titanAssets.body, -70, -70, 140, 140);
+
+        ctx.fillStyle = '#00f3ff';
+        ctx.globalAlpha = 0.4 + Math.sin(this.bodyPulse * 4) * 0.4;
+        ctx.shadowBlur = 20; ctx.shadowColor = '#00f3ff';
+        ctx.beginPath(); ctx.arc(0, 10, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // --- VẼ HIỆU ỨNG PHUN LỬA ---
+        if (this.titanBreathActive) {
+            const grad = ctx.createLinearGradient(0, -50, 0, -350);
+            grad.addColorStop(0, 'rgba(0, 243, 255, 0.95)');
+            grad.addColorStop(0.5, 'rgba(0, 100, 255, 0.6)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -40);
+            const spread = 120 + Math.random() * 40;
+            ctx.lineTo(-spread, -350);
+            ctx.lineTo(spread, -350);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
     }
 
     _drawRobotArms(ctx, alpha, col) {

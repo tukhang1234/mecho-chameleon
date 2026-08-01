@@ -136,9 +136,16 @@ class ScreenShake {
 class AudioSystem {
     constructor() {
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        this.masterGain = this.audioCtx.createGain();
-        this.masterGain.gain.value = 0.4;
-        this.masterGain.connect(this.audioCtx.destination);
+        
+        // Split gains
+        this.musicGain = this.audioCtx.createGain();
+        this.sfxGain = this.audioCtx.createGain();
+        
+        this.musicGain.gain.value = 0.4;
+        this.sfxGain.gain.value = 0.4;
+        
+        this.musicGain.connect(this.audioCtx.destination);
+        this.sfxGain.connect(this.audioCtx.destination);
 
         this.musicNodes = []; // currently playing music oscillators
         this.musicMode = null; // 'menu' or 'game' or 'boss'
@@ -146,13 +153,32 @@ class AudioSystem {
         this.beatInterval = null;
         this.beatStep = 0;
 
+        // Volumes state (0 to 1)
+        this.bgmVol = 0.3;
+        this.sfxVol = 0.5;
+
         // Custom sounds
         this.customSounds = {
             laser: new Audio('sound/Laser sound.wav'),
             lightning: new Audio('sound/lightning.wav')
         };
-        this.customSounds.laser.volume = 0.5;
-        this.customSounds.lightning.volume = 0.5;
+        this.setCustomSoundVolumes();
+    }
+
+    setMusicVolume(vol) {
+        this.bgmVol = vol;
+        this.musicGain.gain.value = vol * 0.8; // scale down a bit to avoid clipping
+    }
+
+    setSfxVolume(vol) {
+        this.sfxVol = vol;
+        this.sfxGain.gain.value = vol * 0.8;
+        this.setCustomSoundVolumes();
+    }
+
+    setCustomSoundVolumes() {
+        this.customSounds.laser.volume = this.sfxVol;
+        this.customSounds.lightning.volume = this.sfxVol;
     }
 
     resume() {
@@ -165,19 +191,19 @@ class AudioSystem {
         
         if (type === 'laser') {
             const sound = this.customSounds.laser.cloneNode();
-            sound.volume = this.masterGain.gain.value;
+            sound.volume = this.sfxGain.gain.value;
             sound.play().catch(e => {});
             return;
         }
         if (type === 'lightning') {
             const sound = this.customSounds.lightning.cloneNode();
-            sound.volume = this.masterGain.gain.value;
+            sound.volume = this.sfxGain.gain.value;
             sound.play().catch(e => {});
             return;
         }
 
         const gain = this.audioCtx.createGain();
-        gain.connect(this.masterGain);
+        gain.connect(this.sfxGain);
         const now = this.audioCtx.currentTime;
 
         if (type === 'shoot') {
@@ -224,7 +250,7 @@ class AudioSystem {
             [600, 900, 1200].forEach((freq, i) => {
                 const osc = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
-                osc.connect(g); g.connect(this.masterGain);
+                osc.connect(g); g.connect(this.sfxGain);
                 osc.type = 'sine';
                 osc.frequency.value = freq;
                 g.gain.setValueAtTime(0, now + i * 0.07);
@@ -248,7 +274,7 @@ class AudioSystem {
             [180, 220, 160].forEach((freq, i) => {
                 const osc = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
-                osc.connect(g); g.connect(this.masterGain);
+                osc.connect(g); g.connect(this.sfxGain);
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(freq, now + i * 0.03);
                 osc.frequency.exponentialRampToValueAtTime(40, now + i * 0.03 + 0.2);
@@ -262,7 +288,7 @@ class AudioSystem {
             [220, 196, 174, 146].forEach((freq, i) => {
                 const osc = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
-                osc.connect(g); g.connect(this.masterGain);
+                osc.connect(g); g.connect(this.sfxGain);
                 osc.type = 'sawtooth';
                 osc.frequency.value = freq;
                 g.gain.setValueAtTime(0.2, now + i * 0.25);
@@ -321,7 +347,7 @@ class AudioSystem {
             const filter = this.audioCtx.createBiquadFilter();
             filter.type = 'lowpass';
             filter.frequency.value = 400 + i * 100;
-            osc.connect(filter); filter.connect(gain); gain.connect(this.masterGain);
+            osc.connect(filter); filter.connect(gain); gain.connect(this.musicGain);
             osc.type = i === 0 ? 'sawtooth' : 'sine';
             osc.frequency.value = freq + i * 0.5; // slight detune for chorus
             gain.gain.setValueAtTime(0, now);
@@ -343,7 +369,7 @@ class AudioSystem {
             const osc = this.audioCtx.createOscillator();
             const gain = this.audioCtx.createGain();
             const reverb = this.audioCtx.createGain();
-            osc.connect(gain); gain.connect(this.masterGain);
+            osc.connect(gain); gain.connect(this.musicGain);
             osc.type = 'triangle';
             osc.frequency.value = notes[step % notes.length];
             gain.gain.setValueAtTime(0.06, now);
@@ -371,7 +397,7 @@ class AudioSystem {
                 // KICK: pitched down noise + low sine
                 const osc = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
-                osc.connect(g); g.connect(this.masterGain);
+                osc.connect(g); g.connect(this.musicGain);
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
@@ -391,7 +417,7 @@ class AudioSystem {
                 const f = this.audioCtx.createBiquadFilter();
                 f.type = 'highpass'; f.frequency.value = 1500;
                 const g = this.audioCtx.createGain();
-                source.connect(f); f.connect(g); g.connect(this.masterGain);
+                source.connect(f); f.connect(g); g.connect(this.musicGain);
                 g.gain.setValueAtTime(0.18, now);
                 g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                 source.start(now); source.stop(now + 0.12);
@@ -408,7 +434,7 @@ class AudioSystem {
                 const f = this.audioCtx.createBiquadFilter();
                 f.type = 'highpass'; f.frequency.value = 8000;
                 const g = this.audioCtx.createGain();
-                source.connect(f); f.connect(g); g.connect(this.masterGain);
+                source.connect(f); f.connect(g); g.connect(this.musicGain);
                 g.gain.setValueAtTime(0.04, now);
                 g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 source.start(now); source.stop(now + 0.05);
@@ -434,7 +460,7 @@ class AudioSystem {
             const g = this.audioCtx.createGain();
             const f = this.audioCtx.createBiquadFilter();
             f.type = 'lowpass'; f.frequency.value = 600;
-            osc.connect(f); f.connect(g); g.connect(this.masterGain);
+            osc.connect(f); f.connect(g); g.connect(this.musicGain);
             osc.type = 'sawtooth';
             osc.frequency.value = bassNotes[step % bassNotes.length];
             g.gain.setValueAtTime(0.18, now);
@@ -470,7 +496,7 @@ class AudioSystem {
                     const g = this.audioCtx.createGain();
                     const f = this.audioCtx.createBiquadFilter();
                     f.type = 'lowpass'; f.frequency.value = 3000;
-                    osc.connect(f); f.connect(g); g.connect(this.masterGain);
+                    osc.connect(f); f.connect(g); g.connect(this.musicGain);
                     osc.type = 'sawtooth';
                     osc.frequency.value = event.note;
                     g.gain.setValueAtTime(0, t);
@@ -508,7 +534,7 @@ class AudioSystem {
             if (pattern[step % 16]) {
                 const osc = this.audioCtx.createOscillator();
                 const g = this.audioCtx.createGain();
-                osc.connect(g); g.connect(this.masterGain);
+                osc.connect(g); g.connect(this.musicGain);
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
@@ -526,7 +552,7 @@ class AudioSystem {
                 const f = this.audioCtx.createBiquadFilter();
                 f.type = 'bandpass'; f.frequency.value = 1000;
                 const g = this.audioCtx.createGain();
-                source.connect(f); f.connect(g); g.connect(this.masterGain);
+                source.connect(f); f.connect(g); g.connect(this.musicGain);
                 g.gain.setValueAtTime(0.2, now);
                 g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                 source.start(now); source.stop(now + 0.15);
@@ -541,7 +567,7 @@ class AudioSystem {
                 const f = this.audioCtx.createBiquadFilter();
                 f.type = 'highpass'; f.frequency.value = 6000;
                 const g = this.audioCtx.createGain();
-                source.connect(f); f.connect(g); g.connect(this.masterGain);
+                source.connect(f); f.connect(g); g.connect(this.musicGain);
                 g.gain.setValueAtTime(0.06, now);
                 g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 source.start(now); source.stop(now + 0.05);
@@ -565,7 +591,7 @@ class AudioSystem {
             const g = this.audioCtx.createGain();
             const f = this.audioCtx.createBiquadFilter();
             f.type = 'lowpass'; f.frequency.value = 800 + Math.sin(step) * 200;
-            osc.connect(f); f.connect(g); g.connect(this.masterGain);
+            osc.connect(f); f.connect(g); g.connect(this.musicGain);
             osc.type = 'sawtooth';
             osc.frequency.value = bassNotes[step % bassNotes.length];
             g.gain.setValueAtTime(0.25, now);
@@ -596,7 +622,7 @@ class AudioSystem {
                     const g = this.audioCtx.createGain();
                     const f = this.audioCtx.createBiquadFilter();
                     f.type = 'lowpass'; f.frequency.value = 4000;
-                    osc.connect(f); f.connect(g); g.connect(this.masterGain);
+                    osc.connect(f); f.connect(g); g.connect(this.musicGain);
                     osc.type = 'square';
                     osc.frequency.value = event.note;
                     g.gain.setValueAtTime(0, t);

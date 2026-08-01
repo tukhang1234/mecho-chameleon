@@ -108,6 +108,13 @@ let waveInterval = null;
 let bgStars = [], bgScanY = 0, bgT = 0;
 const MAX_PARTICLES = 80;
 
+// Game World & Camera
+window.WORLD_WIDTH = 4000;
+window.WORLD_HEIGHT = 4000;
+window.camera = { x: 2000, y: 2000 };
+window.planets = [];
+for (let i = 0; i < 5; i++) window.planets.push(new Planet());
+
 // ==========================
 // MULTIPLAYER STATE
 // ==========================
@@ -193,7 +200,12 @@ window.addEventListener('keydown', e => {
     if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
-window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+window.addEventListener('mousemove', e => { 
+    mouse.screenX = e.clientX; 
+    mouse.screenY = e.clientY; 
+    mouse.x = e.clientX + window.camera.x - canvas.width / 2;
+    mouse.y = e.clientY + window.camera.y - canvas.height / 2;
+});
 window.addEventListener('mousedown', e => {
     if (e.button === 0) mouse.down = true;
     if (e.button === 2) mouse.rightDown = true;
@@ -263,7 +275,9 @@ menuBg();
 // ==========================
 function initGame() {
     if (waveInterval) clearInterval(waveInterval);
-    player = new Player(canvas.width / 2, canvas.height / 2);
+    player = new Player(window.WORLD_WIDTH / 2, window.WORLD_HEIGHT / 2);
+    window.camera.x = player.x;
+    window.camera.y = player.y;
     player.equipped = equippedItems;
     player.invulnTimer = 0;
     enemies = []; collectibles = []; powerups = [];
@@ -319,6 +333,8 @@ function initGame() {
     // Stats toggle button: always show while playing (ALL modes)
     const statsToggleBtn2 = document.getElementById('stats-toggle-btn');
     if (statsToggleBtn2) statsToggleBtn2.classList.remove('hidden');
+    const inGameSettingsBtn2 = document.getElementById('ingame-settings-btn');
+    if (inGameSettingsBtn2) inGameSettingsBtn2.classList.remove('hidden');
     // Ensure panel starts closed
     const statsPanel2 = document.getElementById('stats-panel');
     if (statsPanel2) statsPanel2.classList.add('hidden');
@@ -327,9 +343,6 @@ function initGame() {
     if (mpMode) {
         p1Label.classList.remove('hidden');
         p1Label.innerText = playerIndex === 1 ? '👤 P1 — YOU (HOST)' : '👤 P2 — YOU';
-        document.getElementById('chat-toggle-btn').classList.remove('hidden');
-        const hint = document.getElementById('chat-key-hint');
-        if (hint) hint.classList.remove('hidden');
     } else {
         p1Label.classList.add('hidden');
         document.getElementById('chat-toggle-btn').classList.add('hidden');
@@ -415,12 +428,10 @@ function spawnWaveEnemies(count, wave) {
 }
 
 function spawnEnemy(wave) {
-    const side = Math.random() * 4 | 0;
-    let x, y;
-    if (side === 0) { x = Math.random() * canvas.width; y = -40; }
-    else if (side === 1) { x = canvas.width + 40; y = Math.random() * canvas.height; }
-    else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + 40; }
-    else { x = -40; y = Math.random() * canvas.height; }
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.max(canvas.width, canvas.height) / 2 + 100;
+    const x = Math.max(0, Math.min(window.WORLD_WIDTH, window.camera.x + Math.cos(angle) * distance));
+    const y = Math.max(0, Math.min(window.WORLD_HEIGHT, window.camera.y + Math.sin(angle) * distance));
     
     const spd = 1.5 + wave * 0.08 + Math.random() * 1.2;
     let type = 'seeker';
@@ -463,8 +474,8 @@ function spawnEnemy(wave) {
 
 function spawnBoss(bossType) {
     if (gameState !== 'playing') return;
-    const bx = canvas.width / 2;
-    const by = -80;
+    const bx = Math.max(100, Math.min(window.WORLD_WIDTH - 100, window.camera.x));
+    const by = Math.max(100, window.camera.y - canvas.height / 2 - 100);
     boss = new Boss(bx, by, ((bossType - 1) % 5) + 1);
     boss.netId = ++enemyNetIdCounter;
     bossAlive = true;
@@ -492,14 +503,14 @@ function showWaveAnnounce(text) {
 
 function spawnGear() {
     if (collectibles.length >= 8) return;
-    const x = 60 + Math.random() * (canvas.width - 120);
-    const y = 60 + Math.random() * (canvas.height - 120);
+    const x = Math.max(60, Math.min(window.WORLD_WIDTH - 60, player.x + (Math.random() - 0.5) * 800));
+    const y = Math.max(60, Math.min(window.WORLD_HEIGHT - 60, player.y + (Math.random() - 0.5) * 800));
     collectibles.push(new Gear(x, y));
 }
 
 function spawnUpgrade() {
-    const x = canvas.width / 2 + (Math.random() - 0.5) * 200;
-    const y = canvas.height / 2 + (Math.random() - 0.5) * 200;
+    const x = Math.max(60, Math.min(window.WORLD_WIDTH - 60, player.x + (Math.random() - 0.5) * 400));
+    const y = Math.max(60, Math.min(window.WORLD_HEIGHT - 60, player.y + (Math.random() - 0.5) * 400));
     powerups.push(new PowerUp(x, y));
 }
 
@@ -641,6 +652,55 @@ function checkCollisions() {
             if (particles.particles.length < MAX_PARTICLES)
                 particles.emit(p.x, p.y, p.color, 20, 4);
             powerups.splice(i, 1);
+        }
+    }
+
+    // 🪐🪐🪐 PLANETS 🪐🪐🪐
+    for (let p of window.planets) {
+        if (p.dead) {
+            p.reset(); // Respawn
+            continue;
+        }
+        
+        // Tongue vs Planet
+        if (player.tongueActive && tip && player.tongueProgress > 0.1) {
+            if (!player.tongueHitList.has(p) && Math.hypot(p.x - tip.x, p.y - tip.y) < p.radius + 15) {
+                player.tongueHitList.add(p);
+                if (p.takeDamage(player.finalDamage, tip.x, tip.y)) {
+                    coins += 2000;
+                    if (typeof spawnDamageNumber !== 'undefined') spawnDamageNumber(p.x, p.y, "+2000 Xu", true);
+                    if (audio) audio.playSound('split');
+                    for (let i=0; i<3; i++) powerups.push(new PowerUp(p.x + (Math.random()-0.5)*200, p.y + (Math.random()-0.5)*200));
+                }
+                if (particles && particles.particles.length < MAX_PARTICLES) particles.burst(tip.x, tip.y, p.color, 10, 0, 0);
+                screenShake.trigger(2, 5);
+            }
+        }
+        
+        // Bullets vs Planet
+        for (let b = player.bullets.length - 1; b >= 0; b--) {
+            const bullet = player.bullets[b];
+            if (Math.hypot(p.x - bullet.x, p.y - bullet.y) < p.radius + bullet.radius) {
+                if (p.takeDamage(bullet.damage, bullet.x, bullet.y)) {
+                    coins += 2000;
+                    if (typeof spawnDamageNumber !== 'undefined') spawnDamageNumber(p.x, p.y, "+2000 Xu", true);
+                    if (audio) audio.playSound('split');
+                    for (let i=0; i<3; i++) powerups.push(new PowerUp(p.x + (Math.random()-0.5)*200, p.y + (Math.random()-0.5)*200));
+                }
+                bullet.hit = true;
+                if (particles && particles.particles.length < MAX_PARTICLES) particles.emit(bullet.x, bullet.y, p.color, 5, 2);
+            }
+        }
+
+        // Player vs Planet (collide and block)
+        const dist = Math.hypot(player.x - p.x, player.y - p.y);
+        if (dist < player.radius + player.radius) {
+            const overlap = player.radius + p.radius - dist;
+            const dx = player.x - p.x, dy = player.y - p.y;
+            player.x += (dx / dist) * overlap * 0.5;
+            player.y += (dy / dist) * overlap * 0.5;
+            player.vx *= 0.5;
+            player.vy *= 0.5;
         }
     }
 
@@ -943,10 +1003,16 @@ function drawBg(t) {
     const gs = 70;
     ctx.strokeStyle = 'rgba(0,180,255,0.045)';
     ctx.lineWidth = 1;
-    for (let x = t * 18 % gs; x < W + gs; x += gs) {
+    // Offset background grid by camera
+    const cx = window.camera ? window.camera.x : W/2;
+    const cy = window.camera ? window.camera.y : H/2;
+    const offsetX = (t * 18 - cx * 0.5) % gs;
+    const offsetY = (t * 18 - cy * 0.5) % gs;
+
+    for (let x = offsetX; x < W + gs; x += gs) {
         ctx.beginPath(); ctx.moveTo(x | 0, 0); ctx.lineTo(x | 0, H); ctx.stroke();
     }
-    for (let y = t * 18 % gs; y < H + gs; y += gs) {
+    for (let y = offsetY; y < H + gs; y += gs) {
         ctx.beginPath(); ctx.moveTo(0, y | 0); ctx.lineTo(W, y | 0); ctx.stroke();
     }
 
@@ -989,6 +1055,20 @@ function update() {
     if (player.invulnTimer > 0) player.invulnTimer--;
 
     player.update(keys, mouse, canvas);
+
+    // Camera smoothing to follow player
+    window.camera.x += (player.x - window.camera.x) * 0.1;
+    window.camera.y += (player.y - window.camera.y) * 0.1;
+
+    // Constrain camera to world bounds
+    window.camera.x = Math.max(canvas.width / 2, Math.min(window.camera.x, window.WORLD_WIDTH - canvas.width / 2));
+    window.camera.y = Math.max(canvas.height / 2, Math.min(window.camera.y, window.WORLD_HEIGHT - canvas.height / 2));
+
+    // Update mouse world coordinates continually based on camera
+    if (mouse.screenX !== undefined) {
+        mouse.x = mouse.screenX + window.camera.x - canvas.width / 2;
+        mouse.y = mouse.screenY + window.camera.y - canvas.height / 2;
+    }
 
     // Update enemies (skip for coop client, they use remoteEnemies)
     if (!(mpMode === 'coop' && playerIndex === 2)) {
@@ -1046,10 +1126,24 @@ function update() {
 function draw() {
     if (gameState !== 'playing') return;
 
-    drawBg(bgT);
+    drawBg(bgT); // drawBg handles its own screen-space drawing
 
     ctx.save();
     screenShake.apply(ctx);
+    
+    // Apply Camera Translation
+    ctx.translate(canvas.width / 2 - window.camera.x, canvas.height / 2 - window.camera.y);
+
+    // Draw Map Bounds
+    ctx.strokeStyle = '#00f3ff';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00f3ff';
+    ctx.strokeRect(0, 0, window.WORLD_WIDTH, window.WORLD_HEIGHT);
+    ctx.shadowBlur = 0;
+    
+    // Draw Planets
+    window.planets.forEach(p => p.draw(ctx));
 
     collectibles.forEach(g => g.draw(ctx));
     powerups.forEach(p => p.draw(ctx));
@@ -1076,6 +1170,8 @@ function draw() {
     if (!(mpMode === 'coop' && playerIndex === 2)) {
         const isBossWave = waveNumber % 10 === 0 && bossAlive;
         if (isBossWave) {
+            ctx.restore(); // Temp restore for HUD element
+            ctx.save();
             ctx.globalAlpha = 0.7;
             ctx.font = '13px Orbitron, monospace';
             ctx.textAlign = 'center';
@@ -1084,6 +1180,9 @@ function draw() {
             ctx.fillText('⚠️ BOSS WAVE ⚠️', canvas.width / 2, 50);
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
+            ctx.restore();
+            ctx.save();
+            ctx.translate(canvas.width / 2 - window.camera.x, canvas.height / 2 - window.camera.y);
         }
     }
 
@@ -1122,11 +1221,13 @@ function endGame() {
 
     // Hide in-game UI panels
     const statsToggleBtnEnd = document.getElementById('stats-toggle-btn');
+    const inGameSettingsBtnEnd = document.getElementById('ingame-settings-btn');
     const statsPanelEnd = document.getElementById('stats-panel');
     const chatToggleBtnEnd = document.getElementById('chat-toggle-btn');
     const chatContainerEnd = document.getElementById('chat-container');
     const chatHintEnd = document.getElementById('chat-key-hint');
     if (statsToggleBtnEnd) statsToggleBtnEnd.classList.add('hidden');
+    if (inGameSettingsBtnEnd) inGameSettingsBtnEnd.classList.add('hidden');
     if (statsPanelEnd) statsPanelEnd.classList.add('hidden');
     if (chatToggleBtnEnd) chatToggleBtnEnd.classList.add('hidden');
     if (chatContainerEnd) chatContainerEnd.classList.add('hidden');
@@ -1168,35 +1269,48 @@ function showVictory() {
 // ==========================
 settingsBtn.addEventListener('click', (e) => {
     e.target.blur();
-    mainMenu.classList.add('hidden');
-    settingsScreen.classList.remove('hidden');
-    if (controlMode === 'pc') {
-        modePcBtn.classList.add('selected');
-        modeMobileBtn.classList.remove('selected');
-    } else {
-        modeMobileBtn.classList.add('selected');
-        modePcBtn.classList.remove('selected');
+    if (gameState === 'menu') {
+        mainMenu.classList.add('hidden');
+    } else if (gameState === 'playing') {
+        // Pause game? No, it's multiplayer so we can't really pause.
     }
+    settingsScreen.classList.remove('hidden');
 });
+
+const inGameSettingsBtn = document.getElementById('ingame-settings-btn');
+if (inGameSettingsBtn) {
+    inGameSettingsBtn.addEventListener('click', (e) => {
+        e.target.blur();
+        settingsScreen.classList.remove('hidden');
+    });
+}
 
 backFromSettings.addEventListener('click', () => {
     settingsScreen.classList.add('hidden');
-    mainMenu.classList.remove('hidden');
+    if (gameState === 'menu') {
+        mainMenu.classList.remove('hidden');
+    }
 });
 
-modePcBtn.addEventListener('click', () => {
-    controlMode = 'pc';
-    localStorage.setItem('chameleon_control', 'pc');
-    modePcBtn.classList.add('selected');
-    modeMobileBtn.classList.remove('selected');
-});
+const bgmSlider = document.getElementById('bgm-slider');
+const sfxSlider = document.getElementById('sfx-slider');
+const bgmVal = document.getElementById('bgm-val');
+const sfxVal = document.getElementById('sfx-val');
 
-modeMobileBtn.addEventListener('click', () => {
-    controlMode = 'mobile';
-    localStorage.setItem('chameleon_control', 'mobile');
-    modeMobileBtn.classList.add('selected');
-    modePcBtn.classList.remove('selected');
-});
+if (bgmSlider) {
+    bgmSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        bgmVal.innerText = Math.round(val * 100) + '%';
+        if (audio) audio.setMusicVolume(val);
+    });
+}
+if (sfxSlider) {
+    sfxSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        sfxVal.innerText = Math.round(val * 100) + '%';
+        if (audio) audio.setSfxVolume(val);
+    });
+}
 
 mobileStealthBtn.addEventListener('click', () => {
     if (gameState === 'playing') {
