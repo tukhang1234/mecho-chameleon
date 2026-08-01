@@ -4,14 +4,16 @@
 const damageNumbers = [];
 
 function spawnDamageNumber(x, y, amount, isCrit = false) {
+    const isString = typeof amount === 'string';
     damageNumbers.push({
         x, y: y - 10,
         vy: -2.5, life: 55, maxLife: 55,
-        text: Math.ceil(amount).toString(),
-        color: isCrit ? '#fdf500' : '#fff',
+        text: isString ? amount : Math.ceil(amount).toString(),
+        color: isString ? '#ffd700' : (isCrit ? '#fdf500' : '#fff'),
         scale: isCrit ? 1.6 : 1
     });
 }
+
 
 function updateDamageNumbers() {
     for (let i = damageNumbers.length - 1; i >= 0; i--) {
@@ -32,8 +34,12 @@ function drawDamageNumbers(ctx) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = d.color;
-        ctx.shadowBlur = d.scale > 1 ? 10 : 0;
-        ctx.shadowColor = d.color;
+        if (!window.isLowEndDevice) {
+            ctx.shadowBlur = d.scale > 1 ? 10 : 0;
+            ctx.shadowColor = d.color;
+        } else {
+            ctx.shadowBlur = 0;
+        }
         ctx.fillText(d.text, d.x, d.y);
         ctx.restore();
     }
@@ -56,7 +62,9 @@ class EnemyBullet {
         const alpha = Math.min(1, this.life / 20);
         ctx.save(); ctx.globalAlpha = alpha;
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
-        ctx.fillStyle = '#fff'; ctx.shadowBlur = 12; ctx.shadowColor = '#ff003c'; ctx.fill();
+        ctx.fillStyle = '#fff'; 
+        if (!window.isLowEndDevice) { ctx.shadowBlur = 12; ctx.shadowColor = '#ff003c'; } else ctx.shadowBlur = 0;
+        ctx.fill();
         ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 1.5, 0, Math.PI * 2); 
         ctx.fillStyle = '#ff003c'; ctx.globalAlpha = alpha * 0.4; ctx.fill();
         ctx.restore();
@@ -215,6 +223,8 @@ class Enemy {
         const spikes = r === 36 ? 8 : (r === 24 ? 6 : 5);
 
         ctx.save();
+        if (window.isLowEndDevice) ctx.shadowBlur = 0;
+
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
 
@@ -415,8 +425,10 @@ class Boss extends Enemy {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = p.color;
+            if (!window.isLowEndDevice) {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+            } else ctx.shadowBlur = 0;
             ctx.fill();
             ctx.restore();
         }
@@ -424,14 +436,48 @@ class Boss extends Enemy {
         ctx.save();
         ctx.translate(this.x, this.y);
 
+        // Robot arms (mech variants)
+        ctx.save();
+        ctx.rotate(this.angle);
+        const armWave = Math.sin(this.pulse * 2) * 10;
+        ctx.fillStyle = '#222';
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        if (!window.isLowEndDevice) { ctx.shadowBlur = 15; ctx.shadowColor = col; }
+        
+        if (type === 1) {
+            // Twin Cannons
+            ctx.fillRect(r - 10, -r - 15 - armWave, 35, 12);
+            ctx.strokeRect(r - 10, -r - 15 - armWave, 35, 12);
+            ctx.fillRect(r - 10, r + 3 + armWave, 35, 12);
+            ctx.strokeRect(r - 10, r + 3 + armWave, 35, 12);
+        } else if (type === 2) {
+            // Energy shields / wings
+            ctx.beginPath(); ctx.moveTo(0, -r - 5); ctx.lineTo(r, -r - 30); ctx.lineTo(-r, -r - 20); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, r + 5); ctx.lineTo(r, r + 30); ctx.lineTo(-r, r + 20); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+        } else {
+            // Massive blasters
+            ctx.fillStyle = col;
+            ctx.fillRect(r - 5, -r - 20, 40, 16);
+            ctx.fillRect(r - 5, r + 4, 40, 16);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(r + 30, -r - 18, 10, 12);
+            ctx.fillRect(r + 30, r + 6, 10, 12);
+        }
+        ctx.restore();
+
         // Aura ring
         ctx.beginPath();
         ctx.arc(0, 0, r + 15 + Math.sin(this.pulse) * 5, 0, Math.PI * 2);
         ctx.strokeStyle = col;
         ctx.lineWidth = 3;
         ctx.globalAlpha = 0.2 + Math.sin(this.pulse) * 0.1;
-        ctx.shadowBlur = glow * 2;
-        ctx.shadowColor = col;
+        if (!window.isLowEndDevice) {
+            ctx.shadowBlur = glow * 2;
+            ctx.shadowColor = col;
+        } else ctx.shadowBlur = 0;
         ctx.stroke();
         ctx.globalAlpha = 1;
 
@@ -444,8 +490,10 @@ class Boss extends Enemy {
                 ctx.beginPath();
                 ctx.arc(Math.cos(a) * (r + 8), Math.sin(a) * (r + 8), 10, 0, Math.PI * 2);
                 ctx.fillStyle = col;
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = col;
+                if (!window.isLowEndDevice) {
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = col;
+                }
                 ctx.fill();
             }
             ctx.rotate(-this.shieldAngle);
@@ -487,8 +535,10 @@ class Boss extends Enemy {
         grad.addColorStop(0.4, col + 'cc');
         grad.addColorStop(1, '#00000088');
         ctx.fillStyle = grad;
-        ctx.shadowBlur = glow;
-        ctx.shadowColor = col;
+        if (!window.isLowEndDevice) {
+            ctx.shadowBlur = glow;
+            ctx.shadowColor = col;
+        } else ctx.shadowBlur = 0;
         ctx.fill();
         ctx.strokeStyle = col;
         ctx.lineWidth = 2;

@@ -75,6 +75,10 @@ let enemyBullets = [];
 let collectibles = [];
 let powerups = [];
 
+window.isLowEndDevice = false;
+window.MAX_PARTICLES = 150;
+
+
 // Input
 const keys = {};
 const mouse = { x: 0, y: 0, down: false };
@@ -878,6 +882,15 @@ function hitPlayer(amount) {
 function onEnemyDeath(e, idx) {
     score += e.isBoss ? (500 + waveNumber * 100) : Math.floor(60 * (e.radius / 12));
 
+    // --- Hệ thống rơi xu (Economy) ---
+    let coinDrop = e.isBoss ? (1000 + waveNumber * 200) : Math.floor(e.maxHp / 5) || 5;
+    coins += coinDrop;
+    localStorage.setItem('chameleon_coins', coins.toString());
+    if (typeof spawnDamageNumber !== 'undefined') {
+        spawnDamageNumber(e.x, e.y - 20, "+" + coinDrop + " Xu", true);
+    }
+
+
     // Titan: Restore 10 energy on kill
     if (player.equipped && player.equipped.titan_blue) {
         player.energy = Math.min(player.maxEnergy, (player.energy || 0) + 10);
@@ -997,6 +1010,14 @@ function update() {
 
     collectibles.forEach(g => g.update());
     powerups.forEach(p => p.update());
+
+    // --- Lag reduction (Auto disable shadows if too many objects) ---
+    if (enemies.length + enemyBullets.length + particles.particles.length > 80) {
+        window.isLowEndDevice = true;
+    } else if (enemies.length + enemyBullets.length + particles.particles.length < 40) {
+        window.isLowEndDevice = false;
+    }
+
 
     if (particles.particles.length < MAX_PARTICLES) particles.update();
     else {

@@ -9,6 +9,8 @@ class ParticleSystem {
     }
 
     emit(x, y, color, count, speed = 2, life = 40) {
+        if (this.particles.length > (window.MAX_PARTICLES || 150)) return;
+
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
             const velocity = Math.random() * speed + 0.5;
@@ -29,6 +31,8 @@ class ParticleSystem {
 
     // Emit directional burst (for tongue impact)
     burst(x, y, color, count, dirX, dirY) {
+        if (this.particles.length > (window.MAX_PARTICLES || 150)) return;
+
         for (let i = 0; i < count; i++) {
             const spread = (Math.random() - 0.5) * Math.PI;
             const angle = Math.atan2(dirY, dirX) + spread;
@@ -75,16 +79,24 @@ class ParticleSystem {
                 ctx.strokeStyle = p.color;
                 ctx.globalAlpha = alpha * 0.4;
                 ctx.lineWidth = p.size * 0.5;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = p.color;
+                if (!window.isLowEndDevice) {
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = p.color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
                 ctx.stroke();
             }
 
             // Draw core dot
             ctx.globalAlpha = alpha;
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = p.color;
+            if (!window.isLowEndDevice) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.color;
+            } else {
+                ctx.shadowBlur = 0;
+            }
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
             ctx.fill();
